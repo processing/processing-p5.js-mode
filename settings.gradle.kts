@@ -11,4 +11,7 @@ include(
     "java:libraries:pdf",
     "java:libraries:serial",
     "java:libraries:svg",
+    "p5js",
 )
+// TODO: Does extra include make a difference?
+//include("p5js")
