@@ -14,5 +14,3 @@ include(
     "java:libraries:svg",
     "p5js",
 )
-// TODO: Does extra include make a difference?
-//include("p5js")
