@@ -100,6 +100,7 @@ public class Base {
 
   /** Only one built-in Mode these days, removing the extra fluff. */
   private Mode coreMode;
+  private Mode p5jsMode;
 
   // TODO can these be Set objects, or are they expected to be in order?
   private List<ModeContribution> contribModes;
@@ -755,6 +756,7 @@ public class Base {
   public List<Mode> getModeList() {
     List<Mode> outgoing = new ArrayList<>();
     outgoing.add(coreMode);
+    outgoing.add(p5jsMode);
     if (contribModes != null) {
       for (ModeContribution contrib : contribModes) {
         outgoing.add(contrib.getMode());
@@ -765,18 +767,24 @@ public class Base {
 
 
   void buildCoreModes() {
-    ModeContribution javaModeContrib =
-      ModeContribution.load(this, Platform.getContentFile("modes/java"),
-                            getDefaultModeIdentifier());
+    ModeContribution javaModeContrib = ModeContribution.load(this, Platform.getContentFile("modes/java"), getDefaultModeIdentifier());
+    ModeContribution p5jsModeContrib = ModeContribution.load(this, Platform.getContentFile("modes/p5js"), "processing.p5js.p5js");
     if (javaModeContrib == null) {
       Messages.showError("Startup Error",
-                "Could not load Java Mode, please reinstall Processing.",
-                         new Exception("ModeContribution.load() was null"));
+              "Could not load Java Mode, please reinstall Processing.",
+              new Exception("ModeContribution.load() was null"));
 
     } else {
       // PDE X calls getModeList() while it's loading, so coreModes must be set
       //coreModes = new Mode[] { javaModeContrib.getMode() };
       coreMode = javaModeContrib.getMode();
+    }
+    if (p5jsModeContrib == null) {
+      Messages.showError("Startup Error",
+              "Could not load p5.js Mode, please reinstall Processing.",
+              new Exception("ModeContribution.load() was null"));
+    } else {
+      p5jsMode = p5jsModeContrib.getMode();
     }
   }
 

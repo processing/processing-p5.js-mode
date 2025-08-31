@@ -429,7 +429,7 @@ tasks.register("includeProcessingResources"){
         "includeJavaMode",
         "includeSharedAssets",
         "includeProcessingExamples",
-        "includeProcessingWebsiteExamples",
+//        "includeProcessingWebsiteExamples",
         "includeJavaModeResources",
         "renameWindres"
     )

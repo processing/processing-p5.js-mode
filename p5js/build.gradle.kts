@@ -1,10 +1,11 @@
 plugins {
-    kotlin("jvm") version "2.0.20"
+    kotlin("jvm") version libs.versions.kotlin
     kotlin("plugin.serialization") version "1.9.0"
-}
 
-group = "org.processing"
-version = "1.0-SNAPSHOT"
+    // TODO Unclear whether the whole Compose dependency is necessary
+    alias(libs.plugins.compose.compiler)
+    alias(libs.plugins.jetbrainsCompose)
+}
 
 repositories {
     mavenCentral()
@@ -13,62 +14,49 @@ repositories {
 }
 
 dependencies {
-//    compileOnly(files("/Applications/Processing.app/Contents/Java/pde.jar/**/"))
+    compileOnly(project(":app"))
     implementation(project(":core"))
-    implementation(project(":app"))
 
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.1")
 
-    testImplementation(kotlin("test"))
+    implementation(compose.runtime)
+    implementation(compose.foundation)
+    implementation(compose.material)
+    implementation(compose.ui)
+    implementation(compose.components.resources)
+    implementation(compose.components.uiToolingPreview)
 }
 
-project(":app").tasks.named("run").configure {
-    dependsOn(tasks.named("installLibrary"))
-}
-tasks.create<Copy>("copyJars") {
-    group = "processing"
-    dependsOn(tasks.jar)
-    from(layout.buildDirectory.dir("libs")){
-        include("**/*.jar")
+tasks.register<Copy>("createMode") {
+    dependsOn("jar")
+    into(layout.buildDirectory.dir("mode"))
+    // TODO Why is there a duplicate in the first place?
+    duplicatesStrategy = DuplicatesStrategy.WARN
+
+    from(layout.projectDirectory.dir("library")) {
+        include ("**")
     }
-    from(configurations.compileClasspath)
-    into(layout.buildDirectory.dir("library/mode"))
-    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+
+    from(layout.projectDirectory) {
+        include("js/**")
+    }
+
+    from(configurations.runtimeClasspath) {
+        into("mode")
+    }
+
+    from(tasks.jar) {
+        into("mode")
+    }
 }
-tasks.create<Copy>("createLibrary") {
-    group = "processing"
-    from("library")
-    into(layout.buildDirectory.dir("library"))
+
+tasks.register<Copy>("includeMode") {
+    dependsOn("createMode")
+    from(tasks.named("createMode"))
+    into(project(":app").layout.buildDirectory.dir("resources-bundled/common/modes/p5js"))
 }
-tasks.create<Copy>("installLibrary") {
-    group = "processing"
-    dependsOn(tasks.named("createLibrary"))
-    dependsOn(tasks.named("copyJars"))
-    from(layout.buildDirectory.dir("library"))
-    into("${System.getProperty("user.home")}/sketchbook/modes/p5js")
-}
-//tasks.register<JavaExec>("runProcessing") {
-//    dependsOn(tasks.named("installLibrary"))
-//    group = "processing"
-//    classpath = files(fileTree("/Applications/Processing.app/Contents/Java/"){
-//        include("*.jar")
-//    })
-//    mainClass.set("processing.app.Base")  // Your main class
-//
-//    // Optional: Add arguments if needed
-//    args = listOf("")
-//
-//    // Optional: Add JVM arguments if needed
-//    jvmArgs = listOf("-Xmx2g")
-//}
-tasks.jar {
-    archiveVersion.set("")
-    archiveBaseName.set("p5js")
-}
-tasks.test {
-    useJUnitPlatform()
-}
-kotlin {
-    jvmToolchain(17)
+
+project(":app").tasks.named("includeProcessingResources").configure {
+    dependsOn(tasks.named("includeMode"))
 }
