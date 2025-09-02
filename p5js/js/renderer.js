@@ -1,21 +1,19 @@
-const sendToMainHandler = {
-  get(target, prop) {
-    const consoleMethod = target[prop];
-    // Only intercept methods, return properties
-    if (typeof consoleMethod !== "function") {
-      return Reflect.get(...arguments);
-    }
-    return new Proxy(consoleMethod, {
-      apply(target, thisArg, args) {
-        // Notify main process via own API through contextBridge
-        window.electron.sendMessage({
-          level: prop,
-          msgArgs: args
-        });
-        // Retain original behavior
-        return Reflect.apply(...arguments);
-      }
+// TODO Beware of leakage into global scope!
+const fs = require("node:fs/promises");
+const p = require("node:path");
+
+// const sharp = require("sharp");
+
+let suffix = 0;
+
+async function saveCnv(path) {
+    const canvas = document.querySelector(".p5Canvas");
+    const outPath = p.resolve(path, `out-${suffix.toString().padStart(5, "0")}.png`);
+
+    canvas.toBlob(async (blob) => {
+        const buffer = Buffer.from(await blob.arrayBuffer());
+        // await sharp(buffer).rotate(45).grayscale().toFile(outPath);
+        await fs.writeFile(outPath, buffer);
+        suffix++;
     });
-  }
-};
-window.console = new Proxy(console, sendToMainHandler);
+}
