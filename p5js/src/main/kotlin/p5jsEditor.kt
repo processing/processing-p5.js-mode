@@ -59,25 +59,25 @@ class p5jsEditor(base: Base, path: String?, state: EditorState?, mode: Mode?): E
             val indexHtml = """
                 <!DOCTYPE html>
                 <html lang="en">
-                    <head>
-                        <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.11.1/p5.js"></script>
-                        <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.11.1/addons/p5.sound.min.js"></script>
-                        <meta charset="utf-8" />
-                        <style>
-                            html, body {
-                              margin: 0;
-                              padding: 0;
-                            }
-                            canvas {
-                              display: block;
-                            }
-                        </style>
-                    </head>
+                  <head>
+                    <script src="./node_modules/p5/lib/p5.min.js"></script>
+                    <script src="./node_modules/p5.sound/dist/p5.sound.min.js"></script>
+                    <meta charset="utf-8" />
+                    <style>
+                    html, body {
+                      margin: 0;
+                      padding: 0;
+                    }
+                    canvas {
+                      display: block;
+                    }
+                    </style>
+                  </head>
 
-                    <body>
-                        <script src="./renderer.js"></script>
-                        <script src="$name.js"></script>
-                    </body>
+                  <body>
+                    <script src="renderer.js"></script>
+                    <script src="$name.js"></script>
+                  </body>
                 </html>
             """.trimIndent()
             File("$folder/index.html").writeText(indexHtml)
@@ -155,7 +155,8 @@ class p5jsEditor(base: Base, path: String?, state: EditorState?, mode: Mode?): E
                                 // TODO Hot mess—apologies! (Look into ViewModel, LaunchedEffect, debounce the onValueChange handler!)
                                 onValueChange = {
                                     packageToInstall = it
-                                    if (packageToInstall.length > 1) {
+                                    // TODO Need a better debounce
+                                    if (packageToInstall.length > 4) {
                                         val npmConn =
                                             URL("https://registry.npmjs.org/-/v1/search?text=$packageToInstall")
                                                 .openConnection()
@@ -170,7 +171,7 @@ class p5jsEditor(base: Base, path: String?, state: EditorState?, mode: Mode?): E
                             Button(onClick = {
                                 if (packageToInstall.isNotBlank()) {
                                     // TODO Better error handling
-                                    runNpmActions(sketch.folder, TYPE.pnpm, listOf("add", packageToInstall))
+                                    runNpmActions(sketch.folder, TYPE.pnpm, listOf("add", packageToInstall, "--dangerously-allow-all-builds"))
                                     packageToInstall = ""
                                 }
                             }) {

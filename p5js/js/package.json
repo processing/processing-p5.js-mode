@@ -4,5 +4,9 @@
   "main": "main.js",
   "devDependencies": {
     "electron": "^37.4.0"
+  },
+  "dependencies": {
+    "p5": "^2.0.5",
+    "p5.sound": "^0.2.0"
   }
 }
