@@ -55,7 +55,6 @@ tasks.register<Zip>("createPdex") {
     dependsOn("createMode")
     from(tasks.named("createMode"))
 
-    archiveBaseName.set("p5js_mode")
     archiveExtension.set("pdex")
     destinationDirectory.set(layout.buildDirectory)
 }
