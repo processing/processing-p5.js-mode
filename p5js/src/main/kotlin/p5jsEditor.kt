@@ -51,9 +51,10 @@ class p5jsEditor(base: Base, path: String?, state: EditorState?, mode: Mode?): E
             val folder = sketch.folder
             val name = sketch.name
 
-            // TODO: `getContentFile` is deprecated; what is the suggested "built-in JAR Resources system"?
-            var javascriptFolder = Platform.getContentFile("modes/p5js/js")
-            javascriptFolder.listFiles().forEach { it.copyTo(File(folder, it.name), true) }
+            // TODO: `getContentFile` is deprecated; move to JAR resource system if time allows
+            var javascriptFolder = mode?.getContentFile("js")
+            // TODO: Better error handling in case Electron scaffolding is not found
+            javascriptFolder?.listFiles()?.forEach { it.copyTo(File(folder, it.name), true) }
 
             // TODO: Find a better way to load actual sketch file
             val indexHtml = """
@@ -82,6 +83,7 @@ class p5jsEditor(base: Base, path: String?, state: EditorState?, mode: Mode?): E
             """.trimIndent()
             File("$folder/index.html").writeText(indexHtml)
 
+            runNpmActions(folder, TYPE.npm, listOf("install", "-g", "pnpm"))
             // --dangerously-allow-all-builds allows electron in particular to install properly
             runNpmActions(folder, TYPE.pnpm, listOf("install", "--dangerously-allow-all-builds"))
         }
@@ -194,7 +196,7 @@ class p5jsEditor(base: Base, path: String?, state: EditorState?, mode: Mode?): E
     }
 
     enum class TYPE{
-        pnpm, npx
+        npm, pnpm, npx
     }
 
     val processes = mutableListOf<Process>()
