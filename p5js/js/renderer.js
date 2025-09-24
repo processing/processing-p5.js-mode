@@ -1,19 +1,39 @@
-// TODO Beware of leakage into global scope!
-const fs = require("node:fs/promises");
-const p = require("node:path");
+const path = require('node:path');
 
-// const sharp = require("sharp");
+// Proxy calls to `console` and send output to main process
+const sendToMainHandler = {
+    get(target, prop) {
+        const consoleMethod = target[prop];
+        // Only intercept methods, return properties
+        if (typeof consoleMethod !== "function") {
+            return Reflect.get(...arguments);
+        }
+        return new Proxy(consoleMethod, {
+            apply(target, thisArg, args) {
+                // API in preload.js
+                pde.sendMessage(`console.${prop}: ${args.join(' ')}`);
+                // Retain original behavior
+                return Reflect.apply(...arguments);
+            }
+        });
+    }
+};
+console = new Proxy(console, sendToMainHandler);
 
-let suffix = 0;
-
-async function saveCnv(path) {
-    const canvas = document.querySelector(".p5Canvas");
-    const outPath = p.resolve(path, `out-${suffix.toString().padStart(5, "0")}.png`);
-
-    canvas.toBlob(async (blob) => {
-        const buffer = Buffer.from(await blob.arrayBuffer());
-        // await sharp(buffer).rotate(45).grayscale().toFile(outPath);
-        await fs.writeFile(outPath, buffer);
-        suffix++;
-    });
-}
+// TODO: move error handling logic to Kotlin
+addEventListener("error", ({ message, filename, lineno, colno}) => {
+    pde.sendMessage(
+        ["error", message, path.basename(filename), lineno, colno].join("|")
+    );
+});
+addEventListener("unhandledrejection", ({ reason: { message, stack}}) => {
+    const stackLinesWithFiles = stack.split("\n").slice(1);
+    const potentialSourcesOfError = stackLinesWithFiles
+        .map(line => /\/([^\/]+)\)/.exec(line)[1]);
+    // TODO: improve stack trace parsing; first non-p5 file is suspected source of error
+    const [filename, line, column] =
+        potentialSourcesOfError.find(s => !s.startsWith("p5")).split(":");
+    pde.sendMessage(
+        ["error", message, filename, line, column].join("|")
+    );
+});

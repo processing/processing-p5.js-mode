@@ -2,7 +2,6 @@ package processing.p5js
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.Button
 import androidx.compose.material.Divider
@@ -19,15 +18,12 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.*
 import processing.app.Base
 import processing.app.Formatter
+import processing.app.Messages
 import processing.app.Mode
-import processing.app.Platform
+import processing.app.SketchException
 import processing.app.syntax.JEditTextArea
 import processing.app.syntax.PdeTextArea
 import processing.app.syntax.PdeTextAreaDefaults
@@ -61,8 +57,6 @@ class p5jsEditor(base: Base, path: String?, state: EditorState?, mode: Mode?): E
                 <!DOCTYPE html>
                 <html lang="en">
                   <head>
-                    <script src="./node_modules/p5/lib/p5.min.js"></script>
-                    <script src="./node_modules/p5.sound/dist/p5.sound.min.js"></script>
                     <meta charset="utf-8" />
                     <style>
                     html, body {
@@ -77,6 +71,8 @@ class p5jsEditor(base: Base, path: String?, state: EditorState?, mode: Mode?): E
 
                   <body>
                     <script src="renderer.js"></script>
+                    <script src="./node_modules/p5/lib/p5.min.js"></script>
+                    <script src="./node_modules/p5.sound/dist/p5.sound.min.js"></script>
                     <script src="$name.js"></script>
                   </body>
                 </html>
@@ -200,10 +196,12 @@ class p5jsEditor(base: Base, path: String?, state: EditorState?, mode: Mode?): E
         npm, pnpm, npx
     }
 
+    private fun filenameToCodeIndex(filename: String) {
+
+    }
+
     val processes = mutableListOf<Process>()
     fun runNpmActions(directory: File, type: TYPE, actions: List<String>, onFinished: () -> Unit = {}) {
-
-
         // Wait for previous processes to finish
         processes.forEach { it.waitFor() }
 
@@ -224,21 +222,31 @@ class p5jsEditor(base: Base, path: String?, state: EditorState?, mode: Mode?): E
 
             // Handle output stream
             val reader = BufferedReader(InputStreamReader(process.inputStream))
-            var line: String?
+            var line: String
+
             while (reader.readLine().also { line = it } != null) {
+                // TODO: so much refactoring!
+                // Only check for errors when running the sketch
+                if (type == TYPE.npx && line.startsWith("error")) {
+                    // TODO: more robust data exchange, double-check with @Stef
+                    // TODO: `statusError` does not do anything with column of a SketchException
+                    val ( msgType, msgText, msgFile, msgLine, msgCol ) = line.split("|")
+                    statusError(SketchException(msgText, 0, msgLine.toInt(), msgCol.toInt()))
+                    continue
+                }
+
                 println(line)
             }
-
 
             // Wait for the process to complete
             val exitCode = process.waitFor()
             processes.remove(process)
             onFinished()
             if (exitCode != 0) {
-                throw RuntimeException("npm install failed with exit code $exitCode")
+                throw RuntimeException("$type ${actions.joinToString(" ")} failed with exit code $exitCode.")
             }
         } catch (e: Exception) {
-            throw RuntimeException("Failed to run npm install", e)
+            throw RuntimeException("Failed to run $type ${actions.joinToString(" ")}.", e)
         }
     }
 }
