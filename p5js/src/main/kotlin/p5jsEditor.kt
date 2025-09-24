@@ -83,6 +83,7 @@ class p5jsEditor(base: Base, path: String?, state: EditorState?, mode: Mode?): E
             """.trimIndent()
             File("$folder/index.html").writeText(indexHtml)
 
+            // TODO: Install `pnpm` automatically, stand-alone, and use as Node manager
             runNpmActions(folder, TYPE.npm, listOf("install", "-g", "pnpm"))
             // --dangerously-allow-all-builds allows electron in particular to install properly
             runNpmActions(folder, TYPE.pnpm, listOf("install", "--dangerously-allow-all-builds"))

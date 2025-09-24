@@ -54,6 +54,7 @@ tasks.register<Copy>("createMode") {
 tasks.register<Zip>("createPdex") {
     dependsOn("createMode")
     from(tasks.named("createMode"))
+    into(project.name)
 
     archiveExtension.set("pdex")
     destinationDirectory.set(layout.buildDirectory)
