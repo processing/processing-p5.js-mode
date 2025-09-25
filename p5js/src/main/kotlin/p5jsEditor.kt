@@ -34,6 +34,7 @@ import processing.app.ui.EditorToolbar
 import processing.app.ui.theme.ProcessingTheme
 import java.io.BufferedReader
 import java.io.File
+import java.io.IOException
 import java.io.InputStreamReader
 import java.net.URL
 import javax.swing.JMenu
@@ -42,6 +43,7 @@ import javax.swing.JMenu
 class p5jsEditor(base: Base, path: String?, state: EditorState?, mode: Mode?): Editor(base, path, state, mode) {
 
     val scope = CoroutineScope(Dispatchers.Default)
+
     init {
         scope.launch {
             val folder = sketch.folder
@@ -71,18 +73,33 @@ class p5jsEditor(base: Base, path: String?, state: EditorState?, mode: Mode?): E
 
                   <body>
                     <script src="renderer.js"></script>
-                    <script src="./node_modules/p5/lib/p5.min.js"></script>
-                    <script src="./node_modules/p5.sound/dist/p5.sound.min.js"></script>
+                    <script src="./node_modules/p5/lib/p5.js"></script>
+                    <script src="./node_modules/p5.sound/dist/p5.sound.js"></script>
                     <script src="$name.js"></script>
                   </body>
                 </html>
             """.trimIndent()
             File("$folder/index.html").writeText(indexHtml)
 
-            // TODO: Install `pnpm` automatically, stand-alone, and use as Node manager
-            runNpmActions(folder, TYPE.npm, listOf("install", "-g", "pnpm"))
+            // TODO: refactor into functions
+            // Check whether `pnpm` is already installed; horrible code—my apologies!
+            // TODO: Make more robust, cross-platform, etc. Only job for now is to get a PDEX file out that works on MacOS
+            statusNotice("Looking for pnpm…")
+            try {
+                // TODO: Only an interactive shell allows me access to pnpm
+                runCommand("/bin/bash", listOf("-ci", "pnpm -v"))
+            }
+            catch (e: Exception) {
+                statusNotice("pnpm not found. Installing pnpm…")
+                runCommand("/bin/bash", listOf("-ci", "${mode?.folder}/install.sh"))
+
+                statusNotice("Installing Node via pnpm…")
+                runCommand("/bin/bash", listOf("-ci", "pnpm env use --global lts"))
+            }
+
+            statusNotice("")
             // --dangerously-allow-all-builds allows electron in particular to install properly
-            runNpmActions(folder, TYPE.pnpm, listOf("install", "--dangerously-allow-all-builds"))
+            runCommand("/bin/bash", listOf("-ci", "pnpm install --dangerously-allow-all-builds"))
         }
     }
 
@@ -126,9 +143,9 @@ class p5jsEditor(base: Base, path: String?, state: EditorState?, mode: Mode?): E
         processes.forEach { it.destroy() }
     }
 
-
     override fun deactivateRun() {
         processes.forEach { it.destroy() }
+        toolbar.deactivateRun()
     }
 
     override fun createFooter(): EditorFooter {
@@ -170,7 +187,7 @@ class p5jsEditor(base: Base, path: String?, state: EditorState?, mode: Mode?): E
                             Button(onClick = {
                                 if (packageToInstall.isNotBlank()) {
                                     // TODO Better error handling
-                                    runNpmActions(sketch.folder, TYPE.pnpm, listOf("add", packageToInstall, "--dangerously-allow-all-builds"))
+                                    runCommand("pnpm", listOf("add", packageToInstall, "--dangerously-allow-all-builds"))
                                     packageToInstall = ""
                                 }
                             }) {
@@ -192,25 +209,22 @@ class p5jsEditor(base: Base, path: String?, state: EditorState?, mode: Mode?): E
         return footer
     }
 
-    enum class TYPE{
-        npm, pnpm, npx
-    }
-
     private fun filenameToCodeIndex(filename: String) {
 
     }
 
+    // TODO: state is maintained => turn into class
     val processes = mutableListOf<Process>()
-    fun runNpmActions(directory: File, type: TYPE, actions: List<String>, onFinished: () -> Unit = {}) {
+    fun runCommand(type: String, actions: List<String>, directory: File = sketch.folder, onFinished: () -> Unit = {}) {
         // Wait for previous processes to finish
         processes.forEach { it.waitFor() }
 
         val processBuilder = ProcessBuilder()
         // Set the command based on the operating system
         val command = if (System.getProperty("os.name").lowercase().contains("windows")) {
-            listOf("cmd", "/c", type.name , *actions.toTypedArray())
+            listOf("cmd", "/c", type, *actions.toTypedArray())
         } else {
-            listOf(type.name, *actions.toTypedArray())
+            listOf(type, *actions.toTypedArray())
         }
 
         processBuilder.command(command)
@@ -227,7 +241,7 @@ class p5jsEditor(base: Base, path: String?, state: EditorState?, mode: Mode?): E
             while (reader.readLine().also { line = it } != null) {
                 // TODO: so much refactoring!
                 // Only check for errors when running the sketch
-                if (type == TYPE.npx && line.startsWith("error")) {
+                if (actions[1].startsWith("npx") && line.startsWith("error")) {
                     // TODO: more robust data exchange, double-check with @Stef
                     // TODO: `statusError` does not do anything with column of a SketchException
                     val ( msgType, msgText, msgFile, msgLine, msgCol ) = line.split("|")
