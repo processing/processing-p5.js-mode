@@ -21,6 +21,7 @@ const sendToMainHandler = {
 console = new Proxy(console, sendToMainHandler);
 
 // TODO: move error handling logic to Kotlin
+// TODO: Let p5.js FES do the error parsing?
 addEventListener("error", ({ message, filename, lineno, colno}) => {
     pde.sendMessage(
         ["error", message, path.basename(filename), lineno, colno].join("|")
