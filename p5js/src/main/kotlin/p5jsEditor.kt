@@ -43,6 +43,7 @@ import javax.swing.JMenu
 class p5jsEditor(base: Base, path: String?, state: EditorState?, mode: Mode?): Editor(base, path, state, mode) {
 
     val scope = CoroutineScope(Dispatchers.Default)
+    val SHELL = System.getenv("SHELL")
 
     init {
         scope.launch {
@@ -87,19 +88,23 @@ class p5jsEditor(base: Base, path: String?, state: EditorState?, mode: Mode?): E
             statusNotice("Looking for pnpm…")
             try {
                 // TODO: Only an interactive shell allows me access to pnpm
-                runCommand("/bin/bash", listOf("-ci", "pnpm -v"))
+                runCommand(SHELL, listOf("-ci", "pnpm -v"))
             }
             catch (e: Exception) {
                 statusNotice("pnpm not found. Installing pnpm…")
-                runCommand("/bin/bash", listOf("-ci", "${mode?.folder}/install.sh"))
+                runCommand("chmod", listOf("u+x", "${mode?.folder}/install.sh"))
+                runCommand(SHELL, listOf("-ci", "${mode?.folder}/install.sh"))
 
                 statusNotice("Installing Node via pnpm…")
-                runCommand("/bin/bash", listOf("-ci", "pnpm env use --global lts"))
+                runCommand(SHELL, listOf("-ci", "pnpm env use --global lts"), onFinished = {
+                    statusNotice("Installing Node dependencies…")
+                })
             }
 
-            statusNotice("")
             // --dangerously-allow-all-builds allows electron in particular to install properly
-            runCommand("/bin/bash", listOf("-ci", "pnpm install --dangerously-allow-all-builds"))
+            runCommand(SHELL, listOf("-ci", "pnpm install --dangerously-allow-all-builds"), onFinished = {
+                statusNotice("All done! Enjoy p5.js mode.")
+            })
         }
     }
 
@@ -187,7 +192,7 @@ class p5jsEditor(base: Base, path: String?, state: EditorState?, mode: Mode?): E
                             Button(onClick = {
                                 if (packageToInstall.isNotBlank()) {
                                     // TODO Better error handling
-                                    runCommand("pnpm", listOf("add", packageToInstall, "--dangerously-allow-all-builds"))
+                                    runCommand(SHELL, listOf("-ci", "pnpm add $packageToInstall --dangerously-allow-all-builds"))
                                     packageToInstall = ""
                                 }
                             }) {
