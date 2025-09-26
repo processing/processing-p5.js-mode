@@ -13,7 +13,8 @@ class p5jsEditorToolbar(editor: p5jsEditor?) : EditorToolbar(editor) {
             editor.sketch.save()
 
             runButton.setSelected(true)
-            editor.runCommand("/bin/bash", listOf("-ci", "npx electron .")) {
+            editor.statusNotice("Starting up sketch…")
+            editor.runCommand(editor.SHELL, listOf("-ci", "npx electron .")) {
                 runButton.setSelected(false)
             }
         }
