@@ -75,7 +75,7 @@ class p5jsEditor(base: Base, path: String?, state: EditorState?, mode: Mode?): E
                   <body>
                     <script src="renderer.js"></script>
                     <script src="./node_modules/p5/lib/p5.js"></script>
-                    <script src="./node_modules/p5.sound/dist/p5.sound.js"></script>
+                    <script src="./node_modules/p5/lib/addons/p5.sound.js"></script>
                     <script src="$name.js"></script>
                   </body>
                 </html>
@@ -250,7 +250,7 @@ class p5jsEditor(base: Base, path: String?, state: EditorState?, mode: Mode?): E
                     // TODO: more robust data exchange, double-check with @Stef
                     // TODO: `statusError` does not do anything with column of a SketchException
                     val ( msgType, msgText, msgFile, msgLine, msgCol ) = line.split("|")
-                    statusError(SketchException(msgText, 0, msgLine.toInt(), msgCol.toInt()))
+                    statusError(SketchException(msgText, 0, msgLine.toInt()-1, msgCol.toInt()))
                     continue
                 }
 
