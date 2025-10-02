@@ -43,7 +43,8 @@ import javax.swing.JMenu
 class p5jsEditor(base: Base, path: String?, state: EditorState?, mode: Mode?): Editor(base, path, state, mode) {
 
     val scope = CoroutineScope(Dispatchers.Default)
-    val SHELL = System.getenv("SHELL")
+    val isWindows = System.getProperty("os.name").lowercase().contains("windows")
+    val shell = System.getenv("SHELL")
 
     init {
         scope.launch {
@@ -88,21 +89,26 @@ class p5jsEditor(base: Base, path: String?, state: EditorState?, mode: Mode?): E
             statusNotice("Looking for pnpm…")
             try {
                 // TODO: Only an interactive shell allows me access to pnpm
-                runCommand(SHELL, listOf("-ci", "pnpm -v"))
+                runCommand("pnpm -v")
             }
             catch (e: Exception) {
                 statusNotice("pnpm not found. Installing pnpm…")
-                runCommand("chmod", listOf("u+x", "${mode?.folder}/install.sh"))
-                runCommand(SHELL, listOf("-ci", "${mode?.folder}/install.sh"))
+                if (isWindows) {
+                    runCommand("powershell -command \"Invoke-WebRequest https://get.pnpm.io/install.ps1 -UseBasicParsing | Invoke-Expression\"")
+                }
+                else {
+                    runCommand("chmod u+x ${mode?.folder}/install.sh")
+                    runCommand("${mode?.folder}/install.sh")
+                }
 
                 statusNotice("Installing Node via pnpm…")
-                runCommand(SHELL, listOf("-ci", "pnpm env use --global lts"), onFinished = {
+                runCommand("pnpm env use --global lts", onFinished = {
                     statusNotice("Installing Node dependencies…")
                 })
             }
 
             // --dangerously-allow-all-builds allows electron in particular to install properly
-            runCommand(SHELL, listOf("-ci", "pnpm install --dangerously-allow-all-builds"), onFinished = {
+            runCommand("pnpm install --dangerously-allow-all-builds", onFinished = {
                 statusNotice("All done! Enjoy p5.js mode.")
             })
         }
@@ -192,7 +198,7 @@ class p5jsEditor(base: Base, path: String?, state: EditorState?, mode: Mode?): E
                             Button(onClick = {
                                 if (packageToInstall.isNotBlank()) {
                                     // TODO Better error handling
-                                    runCommand(SHELL, listOf("-ci", "pnpm add $packageToInstall --dangerously-allow-all-builds"))
+                                    runCommand("pnpm add $packageToInstall --dangerously-allow-all-builds")
                                     packageToInstall = ""
                                 }
                             }) {
@@ -220,16 +226,17 @@ class p5jsEditor(base: Base, path: String?, state: EditorState?, mode: Mode?): E
 
     // TODO: state is maintained => turn into class
     val processes = mutableListOf<Process>()
-    fun runCommand(type: String, actions: List<String>, directory: File = sketch.folder, onFinished: () -> Unit = {}) {
+    fun runCommand(action: String, directory: File = sketch.folder, onFinished: () -> Unit = {}) {
         // Wait for previous processes to finish
         processes.forEach { it.waitFor() }
 
         val processBuilder = ProcessBuilder()
+
         // Set the command based on the operating system
-        val command = if (System.getProperty("os.name").lowercase().contains("windows")) {
-            listOf("cmd", "/c", type, *actions.toTypedArray())
+        val command = if (isWindows) {
+            listOf("cmd", "/c", action)
         } else {
-            listOf(type, *actions.toTypedArray())
+            listOf(shell, "-ci", action)
         }
 
         processBuilder.command(command)
@@ -246,7 +253,7 @@ class p5jsEditor(base: Base, path: String?, state: EditorState?, mode: Mode?): E
             while (reader.readLine().also { line = it } != null) {
                 // TODO: so much refactoring!
                 // Only check for errors when running the sketch
-                if (actions[1].startsWith("npx") && line.startsWith("error")) {
+                if (action.startsWith("npx") && line.startsWith("error")) {
                     // TODO: more robust data exchange, double-check with @Stef
                     // TODO: `statusError` does not do anything with column of a SketchException
                     val ( msgType, msgText, msgFile, msgLine, msgCol ) = line.split("|")
@@ -262,10 +269,10 @@ class p5jsEditor(base: Base, path: String?, state: EditorState?, mode: Mode?): E
             processes.remove(process)
             onFinished()
             if (exitCode != 0) {
-                throw RuntimeException("$type ${actions.joinToString(" ")} failed with exit code $exitCode.")
+                throw RuntimeException("$action failed with exit code $exitCode.")
             }
         } catch (e: Exception) {
-            throw RuntimeException("Failed to run $type ${actions.joinToString(" ")}.", e)
+            throw RuntimeException("Failed to run $action.", e)
         }
     }
 }
