@@ -2,8 +2,32 @@
   "name": "p5js-mode-scaffold",
   "version": "0.1.0",
   "main": "main.js",
+  "build": {
+    "appId": "org.processing.user.p5mode",
+    "electronLanguages": [],
+    "linux": {
+      "target": [
+        "AppImage"
+      ]
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ]
+    },
+    "win": {
+      "target": [
+        "portable"
+      ]
+    }
+  },
+  "scripts": {
+    "sketch:start": "electron .",
+    "app:pack": "electron-builder"
+  },
   "devDependencies": {
-    "electron": "^37.4.0"
+    "electron": "^37.4.0",
+    "electron-builder": "24.6.3"
   },
   "dependencies": {
     "p5": "^1.11.10"

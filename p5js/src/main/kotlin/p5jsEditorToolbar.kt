@@ -14,7 +14,7 @@ class p5jsEditorToolbar(editor: p5jsEditor?) : EditorToolbar(editor) {
 
             runButton.setSelected(true)
             editor.statusNotice("Starting up sketch…")
-            editor.runCommand("npx electron .") {
+            editor.runCommand("pnpm sketch:start") {
                 runButton.setSelected(false)
             }
         }
