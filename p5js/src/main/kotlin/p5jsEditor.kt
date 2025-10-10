@@ -17,27 +17,23 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.*
-import processing.app.Base
-import processing.app.Formatter
-import processing.app.Messages
-import processing.app.Mode
-import processing.app.SketchException
+import processing.app.*
 import processing.app.syntax.JEditTextArea
 import processing.app.syntax.PdeTextArea
 import processing.app.syntax.PdeTextAreaDefaults
-import processing.app.ui.Editor
-import processing.app.ui.EditorFooter
-import processing.app.ui.EditorState
-import processing.app.ui.EditorToolbar
+import processing.app.ui.*
 import processing.app.ui.theme.ProcessingTheme
+import java.awt.event.ActionEvent
+import java.awt.event.ActionListener
 import java.io.BufferedReader
 import java.io.File
-import java.io.IOException
 import java.io.InputStreamReader
 import java.net.URL
 import javax.swing.JMenu
+import javax.swing.JMenuItem
 
 
 class p5jsEditor(base: Base, path: String?, state: EditorState?, mode: Mode?): Editor(base, path, state, mode) {
@@ -85,10 +81,8 @@ class p5jsEditor(base: Base, path: String?, state: EditorState?, mode: Mode?): E
 
             // TODO: refactor into functions
             // Check whether `pnpm` is already installed; horrible code—my apologies!
-            // TODO: Make more robust, cross-platform, etc. Only job for now is to get a PDEX file out that works on MacOS
             statusNotice("Looking for pnpm…")
             try {
-                // TODO: Only an interactive shell allows me access to pnpm
                 runCommand("pnpm -v")
             }
             catch (e: Exception) {
@@ -127,8 +121,44 @@ class p5jsEditor(base: Base, path: String?, state: EditorState?, mode: Mode?): E
     }
 
     override fun buildFileMenu(): JMenu {
-        return super.buildFileMenu(arrayOf())
+        val exportApp: JMenuItem = Toolkit.newJMenuItemShift(Language.text("menu.file.export_application"), 'E'.code)
+        exportApp.addActionListener(ActionListener { e: ActionEvent? ->
+            if (sketch.isUntitled || sketch.isReadOnly) {
+                Messages.showMessage("Save First", "Please first save the sketch.");
+            } else {
+                // TODO: I’m sure this is not the best way to ensure that this runs async, so the ActionListener can return
+                // but works for now
+                scope.launch {
+                    handleExport()
+                }
+            }
+        })
+        return super.buildFileMenu(arrayOf(exportApp))
     }
+
+    private fun handleExport() {
+        statusNotice(Language.text("export.notice.exporting"))
+
+        val electronBuilderBin = File(sketch.folder, "node_modules/.bin/electron-builder")
+        if (!electronBuilderBin.exists()) {
+            runCommand("pnpm install --dangerously-allow-all-builds --force")
+        }
+
+        runCommand("pnpm app:pack", onFinished = {
+            Platform.openFolder(sketch.folder)
+            statusNotice(Language.text("export.notice.exporting.done"))
+        })
+    }
+
+//    override fun handleSaveAs(): Boolean {
+//        val saved = super.handleSaveAs()
+//        statusNotice("Rebuilding Node dependencies…")
+//        TODO: Saving is async and might not be finished once the function returns
+//        runCommand("pnpm install --force", onFinished = {
+//            statusNotice("Rebuilding Node dependencies… Done.")
+//        })
+//        return saved
+//    }
 
     override fun buildSketchMenu(): JMenu {
         return super.buildSketchMenu(arrayOf())
