@@ -1,28 +1,29 @@
 package processing.p5js
 
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import processing.app.Messages
-import processing.app.ui.Editor
+import kotlinx.coroutines.sync.withLock
 import processing.app.ui.EditorToolbar
 
-class p5jsEditorToolbar(editor: p5jsEditor?) : EditorToolbar(editor) {
+class p5jsEditorToolbar(editor: p5jsEditor) : EditorToolbar(editor) {
     override fun handleRun(modifiers: Int) {
         val editor = editor as p5jsEditor
 
-        editor.scope.launch {
-            editor.sketch.save()
+        editor.sketch.save()
+        activateRun()
+        editor.statusNotice("Starting up sketch…")
 
-            runButton.setSelected(true)
-            editor.statusNotice("Starting up sketch…")
+        editor.scope.launch {
             editor.runCommand("pnpm sketch:start") {
-                runButton.setSelected(false)
+                deactivateRun()
+                editor.statusEmpty()
             }
         }
     }
 
     override fun handleStop() {
         val editor = editor as p5jsEditor
-        editor.processes.forEach { it.destroy() }
+        editor.sketchProcess?.destroy()
         deactivateRun()
     }
 }

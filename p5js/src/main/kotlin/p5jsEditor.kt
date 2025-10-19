@@ -19,6 +19,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.newSingleThreadContext
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.*
 import processing.app.*
 import processing.app.syntax.JEditTextArea
@@ -34,13 +37,14 @@ import java.io.InputStreamReader
 import java.net.URL
 import javax.swing.JMenu
 import javax.swing.JMenuItem
+import kotlin.jvm.optionals.getOrNull
 
 
 class p5jsEditor(base: Base, path: String?, state: EditorState?, mode: Mode?): Editor(base, path, state, mode) {
 
     val scope = CoroutineScope(Dispatchers.Default)
     val isWindows = System.getProperty("os.name").lowercase().contains("windows")
-    val shell = System.getenv("SHELL")
+    var sketchProcess: Process? = null
 
     init {
         scope.launch {
@@ -96,15 +100,15 @@ class p5jsEditor(base: Base, path: String?, state: EditorState?, mode: Mode?): E
                 }
 
                 statusNotice("Installing Node via pnpm…")
-                runCommand("pnpm env use --global lts", onFinished = {
+                runCommand("pnpm env use --global lts") {
                     statusNotice("Installing Node dependencies…")
-                })
+                }
             }
 
             // --dangerously-allow-all-builds allows electron in particular to install properly
-            runCommand("pnpm install --dangerously-allow-all-builds", onFinished = {
+            runCommand("pnpm install --dangerously-allow-all-builds") {
                 statusNotice("All done! Enjoy p5.js mode.")
-            })
+            }
         }
     }
 
@@ -144,10 +148,10 @@ class p5jsEditor(base: Base, path: String?, state: EditorState?, mode: Mode?): E
             runCommand("pnpm install --dangerously-allow-all-builds --force")
         }
 
-        runCommand("pnpm app:pack", onFinished = {
+        runCommand("pnpm app:pack") {
             Platform.openFolder(sketch.folder)
             statusNotice(Language.text("export.notice.exporting.done"))
-        })
+        }
     }
 
 //    override fun handleSaveAs(): Boolean {
@@ -181,11 +185,11 @@ class p5jsEditor(base: Base, path: String?, state: EditorState?, mode: Mode?): E
     }
 
     override fun internalCloseRunner() {
-        processes.forEach { it.destroy() }
+        sketchProcess?.destroy()
     }
 
     override fun deactivateRun() {
-        processes.forEach { it.destroy() }
+        sketchProcess?.destroy()
         toolbar.deactivateRun()
     }
 
@@ -254,27 +258,31 @@ class p5jsEditor(base: Base, path: String?, state: EditorState?, mode: Mode?): E
 
     }
 
-    // TODO: state is maintained => turn into class
-    val processes = mutableListOf<Process>()
     fun runCommand(action: String, directory: File = sketch.folder, onFinished: () -> Unit = {}) {
-        // Wait for previous processes to finish
-        processes.forEach { it.waitFor() }
-
-        val processBuilder = ProcessBuilder()
-
-        // Set the command based on the operating system
-        val command = if (isWindows) {
-            listOf("cmd", "/c", action)
-        } else {
-            listOf(shell, "-ci", action)
-        }
-
-        processBuilder.command(command)
-        processBuilder.directory(directory)
-
         try {
+            // TODO: Get rid of magic strings. Better way to distinguish “endless” processes and processes we wait for?
+            if (action == "pnpm sketch:start") {
+                sketchProcess?.destroy()
+            }
+
+            val processBuilder = ProcessBuilder()
+
+            // Set the command based on the operating system
+            val shell = System.getenv("SHELL")
+            val command = if (isWindows) {
+                listOf("cmd", "/c", action)
+            } else {
+                listOf(shell, "-ci", action)
+            }
+
+            processBuilder.command(command)
+            processBuilder.directory(directory)
+
             val process = processBuilder.start()
-            processes.add(process)
+
+            if (action == "pnpm sketch:start") {
+                sketchProcess = process;
+            }
 
             // Handle output stream
             val reader = BufferedReader(InputStreamReader(process.inputStream))
@@ -294,15 +302,15 @@ class p5jsEditor(base: Base, path: String?, state: EditorState?, mode: Mode?): E
                 println(line)
             }
 
-            // Wait for the process to complete
             val exitCode = process.waitFor()
-            processes.remove(process)
-            onFinished()
+
             if (exitCode != 0) {
-                throw RuntimeException("$action failed with exit code $exitCode.")
+                throw RuntimeException("Command failed with non-zero exit code $exitCode.")
             }
+
+            onFinished()
         } catch (e: Exception) {
-            throw RuntimeException("Failed to run $action.", e)
+            statusError("Failed to run `$action`: ${e.message}")
         }
     }
 }
