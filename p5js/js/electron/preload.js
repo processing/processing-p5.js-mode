@@ -1,7 +1,8 @@
 const { ipcRenderer } = require("electron");
 
 window.pde = {
-  sendMessage: (message) => ipcRenderer.send("send-message", message)
+  sendMessage: (message) => ipcRenderer.send("send-message", message),
+  resize: (dimensions) => ipcRenderer.send("resize", dimensions)
 };
 
 // Force-disable security warning
