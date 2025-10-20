@@ -17,11 +17,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.newSingleThreadContext
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.withContext
+import kotlinx.html.dom.createHTMLDocument
+import kotlinx.html.dom.serialize
+import kotlinx.html.*
 import kotlinx.serialization.json.*
 import processing.app.*
 import processing.app.syntax.JEditTextArea
@@ -37,7 +36,15 @@ import java.io.InputStreamReader
 import java.net.URL
 import javax.swing.JMenu
 import javax.swing.JMenuItem
-import kotlin.jvm.optionals.getOrNull
+import kotlin.text.charset
+import kotlin.text.contains
+import kotlin.text.decodeToString
+import kotlin.text.isNotBlank
+import kotlin.text.lowercase
+import kotlin.text.split
+import kotlin.text.startsWith
+import kotlin.text.toInt
+import kotlin.text.trimIndent
 
 
 class p5jsEditor(base: Base, path: String?, state: EditorState?, mode: Mode?): Editor(base, path, state, mode) {
@@ -49,42 +56,18 @@ class p5jsEditor(base: Base, path: String?, state: EditorState?, mode: Mode?): E
     init {
         scope.launch {
             val folder = sketch.folder
-            val name = sketch.name
 
-            // TODO: `getContentFile` is deprecated; move to JAR resource system if time allows
-            var javascriptFolder = mode?.getContentFile("js")
-            // TODO: Better error handling in case Electron scaffolding is not found
-            javascriptFolder?.listFiles()?.forEach { it.copyTo(File(folder, it.name), true) }
+            // Copy all Electron scaffolding mode’s `js` folder
+            var electronFolder = mode?.getContentFile("js/electron")
+            electronFolder?.copyTo(folder, true)
 
-            // TODO: Find a better way to load actual sketch file
-            val indexHtml = """
-                <!DOCTYPE html>
-                <html lang="en">
-                  <head>
-                    <meta charset="utf-8" />
-                    <style>
-                    html, body {
-                      margin: 0;
-                      padding: 0;
-                    }
-                    canvas {
-                      display: block;
-                    }
-                    </style>
-                  </head>
+            // Only copy `package.json` and `pnpm-lock.yaml` if not existent
+            mode?.getContentFile("js/package.json")?.copyTo(folder)
+            mode?.getContentFile("js/pnpm-lock.yaml")?.copyTo(folder)
 
-                  <body>
-                    <script src="renderer.js"></script>
-                    <script src="./node_modules/p5/lib/p5.js"></script>
-                    <script src="./node_modules/p5/lib/addons/p5.sound.js"></script>
-                    <script src="$name.js"></script>
-                  </body>
-                </html>
-            """.trimIndent()
-            File("$folder/index.html").writeText(indexHtml)
+            createIndexHtml()
 
-            // TODO: refactor into functions
-            // Check whether `pnpm` is already installed; horrible code—my apologies!
+            // TODO: refactor into functions, pick up crucial information from stdout
             statusNotice("Looking for pnpm…")
             try {
                 runCommand("pnpm -v")
@@ -105,10 +88,7 @@ class p5jsEditor(base: Base, path: String?, state: EditorState?, mode: Mode?): E
                 }
             }
 
-            // --dangerously-allow-all-builds allows electron in particular to install properly
-            runCommand("pnpm install --dangerously-allow-all-builds") {
-                statusNotice("All done! Enjoy p5.js mode.")
-            }
+            statusNotice("All done! Enjoy p5.js mode.")
         }
     }
 
@@ -254,8 +234,30 @@ class p5jsEditor(base: Base, path: String?, state: EditorState?, mode: Mode?): E
         return footer
     }
 
-    private fun filenameToCodeIndex(filename: String) {
+    fun createIndexHtml() {
+        val htmlCode = createHTMLDocument().html {
+            comment("This file is managed by the p5.js mode. Do not change manually!")
+            head {
+                meta { charset = "utf-8" }
+                meta {
+                    name = "viewport"
+                    content = "width=device-width, initial-scale=1"
+                }
+                title { +sketch.mainName }
+                link(href = "style.css", rel = "stylesheet")
+            }
+            body {
+                script(src = "renderer.js") {}
+                script(src = "../node_modules/p5/lib/p5.min.js") {}
+                script(src = "../node_modules/p5/lib/addons/p5.sound.js") {}
+                sketch.code.forEach { code ->
+                    script(src = "../${code.file.name}") {}
+                }
+                script(src = "resizer.js") {}
+            }
+        }.serialize(true)
 
+        sketch.folder.resolve("electron/index.html").writeText(htmlCode)
     }
 
     fun runCommand(action: String, directory: File = sketch.folder, onFinished: () -> Unit = {}) {

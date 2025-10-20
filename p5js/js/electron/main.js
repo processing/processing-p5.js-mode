@@ -15,7 +15,7 @@ const createWindow = () => {
     }
   });
 
-  win.loadFile('index.html');
+  win.loadFile('electron/index.html');
 
   // Register the 'Escape' key shortcut
   globalShortcut.register('Escape', () => {
@@ -26,6 +26,8 @@ const createWindow = () => {
   win.on('closed', () => {
     globalShortcut.unregister('Escape');
   });
+
+  return win;
 }
 
 app.on('window-all-closed', () => {
@@ -35,8 +37,13 @@ app.on('window-all-closed', () => {
 });
 
 app.whenReady().then(() => {
+  const win = createWindow();
+
   ipcMain.on("send-message", (event, message) => {
     console.log(message);
   });
-  createWindow();
+
+  ipcMain.on("resize", (event, {width, height}) => {
+    win.setSize(width, height);
+  });
 });

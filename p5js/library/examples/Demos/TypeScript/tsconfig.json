@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "module": "none",
+    "noImplicitAny": true,
+    "outFile": "TypeScript.js",
+    "preserveConstEnums": true,
+    "removeComments": true,
+    "rootDir": "./sketch/",
+    "sourceMap": true,
+    "target": "ESNext",
+    "moduleResolution": "node"
+  }
+}

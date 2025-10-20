@@ -21,10 +21,10 @@ class p5js(base: Base, folder: File): Mode(base, folder) {
     }
 
     override fun getExtensions(): Array<String> {
-        return arrayOf("js", "html")
+        return arrayOf("js", "ts")
     }
 
     override fun getIgnorable(): Array<String> {
-        return arrayOf("bak", "tmp")
+        return arrayOf("node_modules")
     }
 }

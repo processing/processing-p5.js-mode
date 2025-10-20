@@ -19,6 +19,7 @@ dependencies {
 
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-html-jvm:0.12.0")
 
     implementation(compose.runtime)
     implementation(compose.foundation)
