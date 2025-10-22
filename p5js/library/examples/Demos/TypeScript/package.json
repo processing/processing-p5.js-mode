@@ -22,6 +22,7 @@
     }
   },
   "scripts": {
+    "sketch:build": "tsc",
     "sketch:start": "tsc && electron .",
     "app:pack": "electron-builder"
   },
