@@ -7,7 +7,10 @@ const observer = new MutationObserver((mutationList) => {
         mutation => mutation.addedNodes[0]?.nodeName === "MAIN"
     ).length > 0;
     if (p5Ready) {
-        const { width, height } = document.querySelector("canvas");
+        // Choose CSS over device pixels for proper window size across all screens
+        const { style } = document.querySelector("canvas");
+        const width = parseInt(style.width);
+        const height = parseInt(style.height);
         pde.resize({
             width,
             height
