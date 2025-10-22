@@ -3,6 +3,7 @@ const { app, BrowserWindow, globalShortcut, ipcMain } = require('electron');
 
 const createWindow = () => {
   const win = new BrowserWindow({
+    show: false,
     width: 400,
     height: 400,
     useContentSize: true,
@@ -45,5 +46,6 @@ app.whenReady().then(() => {
 
   ipcMain.on("resize", (event, {width, height}) => {
     win.setSize(width, height);
+    win.show();
   });
 });

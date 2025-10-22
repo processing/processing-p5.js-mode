@@ -58,12 +58,12 @@ class p5jsEditor(base: Base, path: String?, state: EditorState?, mode: Mode?): E
             val folder = sketch.folder
 
             // Copy all Electron scaffolding mode’s `js` folder
-            var electronFolder = mode?.getContentFile("js/electron")
-            electronFolder?.copyTo(folder, true)
+            var javascriptFolder = mode?.getContentFile("js")
+            javascriptFolder?.resolve("electron")?.copyRecursively(folder.resolve("electron"), true)
 
             // Only copy `package.json` and `pnpm-lock.yaml` if not existent
-            mode?.getContentFile("js/package.json")?.copyTo(folder)
-            mode?.getContentFile("js/pnpm-lock.yaml")?.copyTo(folder)
+            javascriptFolder?.resolve("package.json")?.copyTo(folder.resolve("package.json"))
+            javascriptFolder?.resolve("pnpm-lock.yaml")?.copyTo(folder.resolve("pnpm-lock.yaml"))
 
             createIndexHtml()
 
@@ -293,7 +293,7 @@ class p5jsEditor(base: Base, path: String?, state: EditorState?, mode: Mode?): E
             while (reader.readLine().also { line = it } != null) {
                 // TODO: so much refactoring!
                 // Only check for errors when running the sketch
-                if (action.startsWith("npx") && line.startsWith("error")) {
+                if (action == "pnpm sketch:start" && line.startsWith("error")) {
                     // TODO: more robust data exchange, double-check with @Stef
                     // TODO: `statusError` does not do anything with column of a SketchException
                     val ( msgType, msgText, msgFile, msgLine, msgCol ) = line.split("|")
