@@ -55,7 +55,6 @@ class PolygonHelper {
 }
 let numberOfShapesControl;
 function setup() {
-    console.log("🚀 - Setup initialized - P5 is running");
     createCanvas(windowWidth, windowHeight);
     rectMode(CENTER).noFill().frameRate(30);
     numberOfShapesControl = createSlider(1, 30, 15, 1).position(10, 10).style("width", "100px");

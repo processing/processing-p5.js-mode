@@ -18,9 +18,9 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.html.*
 import kotlinx.html.dom.createHTMLDocument
 import kotlinx.html.dom.serialize
-import kotlinx.html.*
 import kotlinx.serialization.json.*
 import processing.app.*
 import processing.app.syntax.JEditTextArea
@@ -32,19 +32,11 @@ import java.awt.event.ActionEvent
 import java.awt.event.ActionListener
 import java.io.BufferedReader
 import java.io.File
+import java.io.IOException
 import java.io.InputStreamReader
 import java.net.URL
 import javax.swing.JMenu
 import javax.swing.JMenuItem
-import kotlin.text.charset
-import kotlin.text.contains
-import kotlin.text.decodeToString
-import kotlin.text.isNotBlank
-import kotlin.text.lowercase
-import kotlin.text.split
-import kotlin.text.startsWith
-import kotlin.text.toInt
-import kotlin.text.trimIndent
 
 
 class p5jsEditor(base: Base, path: String?, state: EditorState?, mode: Mode?): Editor(base, path, state, mode) {
@@ -55,15 +47,20 @@ class p5jsEditor(base: Base, path: String?, state: EditorState?, mode: Mode?): E
 
     init {
         scope.launch {
-            val folder = sketch.folder
-
-            // Copy all Electron scaffolding mode’s `js` folder
+            // Copy all Electron scaffolding from mode’s `js` folder
             var javascriptFolder = mode?.getContentFile("js")
-            javascriptFolder?.resolve("electron")?.copyRecursively(folder.resolve("electron"), true)
+            javascriptFolder?.resolve("electron")?.copyRecursively(sketch.folder.resolve("electron"), true)
 
             // Only copy `package.json` and `pnpm-lock.yaml` if not existent
-            javascriptFolder?.resolve("package.json")?.copyTo(folder.resolve("package.json"))
-            javascriptFolder?.resolve("pnpm-lock.yaml")?.copyTo(folder.resolve("pnpm-lock.yaml"))
+            // Some examples bring their own
+            try {
+                javascriptFolder?.resolve("package.json")?.copyTo(sketch.folder.resolve("package.json"))
+                javascriptFolder?.resolve("pnpm-lock.yaml")?.copyTo(sketch.folder.resolve("pnpm-lock.yaml"))
+            }
+            catch (e: FileAlreadyExistsException) {
+                Messages.log("File already exists: ${e.message}")
+                // TODO: How to differentiate example with own `package.json` and saved sketch?
+            }
 
             createIndexHtml()
 
@@ -157,7 +154,23 @@ class p5jsEditor(base: Base, path: String?, state: EditorState?, mode: Mode?): E
     }
 
     override fun handleOpenInternal(path: String?) {
-        super.handleOpenInternal(path)
+        try {
+            sketch = Sketch(path, this)
+
+            // If sketch is read-only move all files to temporary folder
+            // to allow them to run without saving first
+            if (sketch.isReadOnly) {
+                val newSketchFolder = sketch.makeTempFolder()
+                val mainSketchFile = File(path, "sketch-main.js").name
+                sketch.folder.copyRecursively(newSketchFolder)
+                sketch = Sketch(newSketchFolder.resolve(mainSketchFile).path, this)
+            }
+        } catch (e: IOException) {
+            throw EditorException("Could not create the sketch.", e)
+        }
+
+        header.rebuild()
+        updateTitle()
     }
 
     override fun getCommentPrefix(): String {
@@ -250,7 +263,7 @@ class p5jsEditor(base: Base, path: String?, state: EditorState?, mode: Mode?): E
                 script(src = "renderer.js") {}
                 script(src = "../node_modules/p5/lib/p5.min.js") {}
                 script(src = "../node_modules/p5/lib/addons/p5.sound.js") {}
-                sketch.code.forEach { code ->
+                sketch.code.filter { code -> code.file.extension == "js" }.forEach { code ->
                     script(src = "../${code.file.name}") {}
                 }
                 script(src = "resizer.js") {}
