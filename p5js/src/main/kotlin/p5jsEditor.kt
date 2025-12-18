@@ -23,6 +23,7 @@ import kotlinx.html.dom.createHTMLDocument
 import kotlinx.html.dom.serialize
 import kotlinx.serialization.json.*
 import processing.app.*
+import processing.app.Messages.Companion.log
 import processing.app.syntax.JEditTextArea
 import processing.app.syntax.PdeTextArea
 import processing.app.syntax.PdeTextAreaDefaults
@@ -142,7 +143,17 @@ class p5jsEditor(base: Base, path: String?, state: EditorState?, mode: Mode?): E
 //    }
 
     override fun buildSketchMenu(): JMenu {
-        return super.buildSketchMenu(arrayOf())
+        val runItem = Toolkit.newJMenuItem(Language.text("menu.sketch.run"), 'R'.code)
+        runItem.addActionListener { e: ActionEvent? -> toolbar.handleRun(0) }
+
+//        val presentItem = Toolkit.newJMenuItemShift(Language.text("menu.sketch.present"), 'R'.code)
+//        presentItem.addActionListener { e: ActionEvent? -> toolbar.handleRun(0) }
+
+        val stopItem = JMenuItem(Language.text("menu.sketch.stop"))
+        stopItem.addActionListener { e: ActionEvent? ->
+            toolbar.handleStop()
+        }
+        return super.buildSketchMenu(arrayOf(runItem, stopItem))
     }
 
     override fun handleImportLibrary(name: String?) {
