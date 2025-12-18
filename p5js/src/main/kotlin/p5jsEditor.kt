@@ -303,12 +303,12 @@ class p5jsEditor(base: Base, path: String?, state: EditorState?, mode: Mode?): E
 
             // Handle output stream
             val reader = BufferedReader(InputStreamReader(process.inputStream))
-            var line: String
+            var line: String?
 
             while (reader.readLine().also { line = it } != null) {
                 // TODO: so much refactoring!
                 // Only check for errors when running the sketch
-                if (action == "pnpm sketch:start" && line.startsWith("error")) {
+                if (action == "pnpm sketch:start" && line?.startsWith("error") == true) {
                     // TODO: more robust data exchange, double-check with @Stef
                     // TODO: `statusError` does not do anything with column of a SketchException
                     val ( msgType, msgText, msgFile, msgLine, msgCol ) = line.split("|")

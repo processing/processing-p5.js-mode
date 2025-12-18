@@ -27,4 +27,14 @@ class p5js(base: Base, folder: File): Mode(base, folder) {
     override fun getIgnorable(): Array<String> {
         return arrayOf("node_modules")
     }
+
+    override fun addTemplateFiles(sketchFolder: File?, sketchName: String?): File? {
+        val sketch = super.addTemplateFiles(sketchFolder, sketchName)
+        val defaultSketch = getContentFile("js/sketch.js")
+        if (defaultSketch != null && sketch != null) {
+            defaultSketch.copyTo(sketch, overwrite = true)
+        }
+        return sketch
+
+    }
 }
