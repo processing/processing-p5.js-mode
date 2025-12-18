@@ -1,0 +1,55 @@
+name: Release p5.js Mode
+on:
+  workflow_dispatch:
+    inputs:
+      version_number:
+        description: "What is the revision number?"
+        required: true
+      version_pretty:
+        description: "What is the pretty version name?"
+        required: true
+
+jobs:
+  release:
+    name: Release p5.js Mode
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+      - name: Install Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17.0.8'
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+      - name: Build with Gradle
+        run: ./gradlew createPdex createZip
+
+      - name: Set Version Number
+        run: |
+          VERSION_NUMBER=${{ github.event.inputs.version_number }}
+          VERSION_PRETTY=${{ github.event.inputs.version_pretty }}
+          sed -i "s/^version=.*$/version=$VERSION_NUMBER/" p5js/mode/mode.properties
+          sed -i "s/^prettyVersion=.*$/prettyVersion=$VERSION_PRETTY/" p5js/mode/mode.properties
+
+      - name: Upload to Release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: p5js/build/p5js.*
+          tag: p5js-v${{ github.event.inputs.version_number }}
+          file_glob: true
+          overwrite: true
+          
+      - name: Upload Properties to Release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: p5js/build/mode/mode.properties
+          asset_name: p5js.txt
+          tag: p5js-v${{ github.event.inputs.version_number }}
+          overwrite: true
+

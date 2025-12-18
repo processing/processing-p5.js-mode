@@ -1,0 +1,38 @@
+{
+  "name": "p5js-mode-demo-typescript",
+  "version": "0.1.0",
+  "main": "electron/main.js",
+  "build": {
+    "appId": "org.processing.user.p5mode",
+    "electronLanguages": [],
+    "linux": {
+      "target": [
+        "AppImage"
+      ]
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ]
+    },
+    "win": {
+      "target": [
+        "portable"
+      ]
+    }
+  },
+  "scripts": {
+    "sketch:build": "tsc",
+    "sketch:start": "tsc && electron .",
+    "app:pack": "electron-builder"
+  },
+  "devDependencies": {
+    "@types/p5": "^1.7.6",
+    "electron": "^37.4.0",
+    "electron-builder": "24.6.3",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "p5": "^1.11.10"
+  }
+}

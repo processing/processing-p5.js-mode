@@ -12,4 +12,5 @@ include(
     "java:libraries:pdf",
     "java:libraries:serial",
     "java:libraries:svg",
+    "p5js",
 )
