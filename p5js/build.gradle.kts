@@ -1,4 +1,5 @@
 import org.jetbrains.compose.internal.de.undercouch.gradle.tasks.download.Download
+import kotlin.text.replace
 
 plugins {
     kotlin("jvm") version libs.versions.kotlin
@@ -42,12 +43,20 @@ tasks.register<Download>("includeP5jsExamples"){
         copy{
             from(zipTree(examples)){ // remove top level directory
                 include("*/src/content/examples/en/**/*")
+                exclude("**/description.mdx")
                 eachFile { relativePath = RelativePath(true, *relativePath.segments.drop(5).toTypedArray()) }
                 eachFile{
                     if(name != "code.js"){ return@eachFile }
 
                     val parentName = this.file.parentFile.name
                     name = "$parentName.js"
+                }
+                eachFile {
+                    // if the file is .js and not in a directory named of itself, move it to such a directory
+                    if(!name.endsWith(".js")){ return@eachFile}
+                    val parentName = this.file.parentFile.name
+                    if(parentName == name.removeSuffix(".js")){ return@eachFile }
+                    relativePath = RelativePath(true, *relativePath.segments.dropLast(1).toTypedArray(), name.removeSuffix(".js"), name)
                 }
             }
             into(layout.buildDirectory.dir("mode/examples/Basics"))
