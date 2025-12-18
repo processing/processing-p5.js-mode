@@ -40,7 +40,7 @@ jobs:
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: p5js/build/p5js.*
-          tag: p5js-v${{ github.event.inputs.version_number }}
+          tag: p5js-v${{ github.event.inputs.version_pretty }}
           file_glob: true
           overwrite: true
           
@@ -50,6 +50,6 @@ jobs:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: p5js/build/mode/mode.properties
           asset_name: p5js.txt
-          tag: p5js-v${{ github.event.inputs.version_number }}
+          tag: p5js-v${{ github.event.inputs.version_pretty }}
           overwrite: true
 
