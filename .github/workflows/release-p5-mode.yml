@@ -8,6 +8,7 @@ on:
       version_pretty:
         description: "What is the pretty version name?"
         required: true
+  pull_request:
 
 jobs:
   release:
