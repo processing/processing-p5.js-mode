@@ -341,6 +341,12 @@ class p5jsEditor(base: Base, path: String?, state: EditorState?, mode: Mode?) : 
         try {
             val processBuilder = builder(action, directory)
             val process = processBuilder.start()
+            val reader = BufferedReader(InputStreamReader(process.inputStream))
+            var line: String?
+
+            while (reader.readLine().also { line = it } != null) {
+                println(line)
+            }
             // suspend fun to wait for process to finish
             val exitCode = process.waitFor()
 
