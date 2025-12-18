@@ -160,7 +160,7 @@ class p5jsEditor(base: Base, path: String?, state: EditorState?, mode: Mode?): E
             // If sketch is read-only move all files to temporary folder
             // to allow them to run without saving first
             if (sketch.isReadOnly) {
-                val newSketchFolder = sketch.makeTempFolder()
+                val newSketchFolder = sketch.makeTempFolder().resolve(sketch.name)
                 val mainSketchFile = File(path, "sketch-main.js").name
                 sketch.folder.copyRecursively(newSketchFolder)
                 sketch = Sketch(newSketchFolder.resolve(mainSketchFile).path, this)

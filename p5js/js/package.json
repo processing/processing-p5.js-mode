@@ -30,6 +30,6 @@
     "electron-builder": "24.6.3"
   },
   "dependencies": {
-    "p5": "^1.11.10"
+    "p5": "^2.1.2"
   }
 }
