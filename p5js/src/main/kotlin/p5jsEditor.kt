@@ -146,14 +146,14 @@ class p5jsEditor(base: Base, path: String?, state: EditorState?, mode: Mode?): E
         val runItem = Toolkit.newJMenuItem(Language.text("menu.sketch.run"), 'R'.code)
         runItem.addActionListener { e: ActionEvent? -> toolbar.handleRun(0) }
 
-//        val presentItem = Toolkit.newJMenuItemShift(Language.text("menu.sketch.present"), 'R'.code)
-//        presentItem.addActionListener { e: ActionEvent? -> toolbar.handleRun(0) }
+        val presentItem = Toolkit.newJMenuItemShift(Language.text("menu.sketch.present"), 'R'.code)
+        presentItem.addActionListener { e: ActionEvent? -> toolbar.handleRun(java.awt.Event.SHIFT_MASK) }
 
         val stopItem = JMenuItem(Language.text("menu.sketch.stop"))
         stopItem.addActionListener { e: ActionEvent? ->
             toolbar.handleStop()
         }
-        return super.buildSketchMenu(arrayOf(runItem, stopItem))
+        return super.buildSketchMenu(arrayOf(runItem, presentItem, stopItem))
     }
 
     override fun handleImportLibrary(name: String?) {
