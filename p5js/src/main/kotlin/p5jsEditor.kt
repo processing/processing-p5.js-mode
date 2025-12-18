@@ -23,7 +23,6 @@ import kotlinx.html.dom.createHTMLDocument
 import kotlinx.html.dom.serialize
 import kotlinx.serialization.json.*
 import processing.app.*
-import processing.app.Messages.Companion.log
 import processing.app.syntax.JEditTextArea
 import processing.app.syntax.PdeTextArea
 import processing.app.syntax.PdeTextAreaDefaults
@@ -40,11 +39,11 @@ import javax.swing.JMenu
 import javax.swing.JMenuItem
 
 
-class p5jsEditor(base: Base, path: String?, state: EditorState?, mode: Mode?): Editor(base, path, state, mode) {
+class p5jsEditor(base: Base, path: String?, state: EditorState?, mode: Mode?) : Editor(base, path, state, mode) {
 
     val scope = CoroutineScope(Dispatchers.Default)
     val isWindows = System.getProperty("os.name").lowercase().contains("windows")
-    var sketchProcess: Process? = null
+    var processes: MutableList<Process> = mutableListOf()
 
     init {
         scope.launch {
@@ -57,8 +56,7 @@ class p5jsEditor(base: Base, path: String?, state: EditorState?, mode: Mode?): E
             try {
                 javascriptFolder?.resolve("package.json")?.copyTo(sketch.folder.resolve("package.json"))
                 javascriptFolder?.resolve("pnpm-lock.yaml")?.copyTo(sketch.folder.resolve("pnpm-lock.yaml"))
-            }
-            catch (e: FileAlreadyExistsException) {
+            } catch (e: FileAlreadyExistsException) {
                 Messages.log("File already exists: ${e.message}")
                 // TODO: How to differentiate example with own `package.json` and saved sketch?
             }
@@ -69,21 +67,17 @@ class p5jsEditor(base: Base, path: String?, state: EditorState?, mode: Mode?): E
             statusNotice("Looking for pnpm…")
             try {
                 runCommand("pnpm -v")
-            }
-            catch (e: Exception) {
+            } catch (e: Exception) {
                 statusNotice("pnpm not found. Installing pnpm…")
                 if (isWindows) {
                     runCommand("powershell -command \"Invoke-WebRequest https://get.pnpm.io/install.ps1 -UseBasicParsing | Invoke-Expression\"")
-                }
-                else {
+                } else {
                     runCommand("chmod u+x ${mode?.folder}/install.sh")
                     runCommand("${mode?.folder}/install.sh")
                 }
 
                 statusNotice("Installing Node via pnpm…")
-                runCommand("pnpm env use --global lts") {
-                    statusNotice("Installing Node dependencies…")
-                }
+                runCommand("pnpm env use --global lts")
             }
 
             statusNotice("All done! Enjoy p5.js mode.")
@@ -126,21 +120,12 @@ class p5jsEditor(base: Base, path: String?, state: EditorState?, mode: Mode?): E
             runCommand("pnpm install --dangerously-allow-all-builds --force")
         }
 
-        runCommand("pnpm app:pack") {
+        scope.launch {
+            runCommand("pnpm app:pack")
             Platform.openFolder(sketch.folder)
             statusNotice(Language.text("export.notice.exporting.done"))
         }
     }
-
-//    override fun handleSaveAs(): Boolean {
-//        val saved = super.handleSaveAs()
-//        statusNotice("Rebuilding Node dependencies…")
-//        TODO: Saving is async and might not be finished once the function returns
-//        runCommand("pnpm install --force", onFinished = {
-//            statusNotice("Rebuilding Node dependencies… Done.")
-//        })
-//        return saved
-//    }
 
     override fun buildSketchMenu(): JMenu {
         val runItem = Toolkit.newJMenuItem(Language.text("menu.sketch.run"), 'R'.code)
@@ -189,12 +174,11 @@ class p5jsEditor(base: Base, path: String?, state: EditorState?, mode: Mode?): E
     }
 
     override fun internalCloseRunner() {
-        sketchProcess?.destroy()
     }
 
     override fun deactivateRun() {
-        sketchProcess?.destroy()
-        toolbar.deactivateRun()
+        processes.forEach { it.destroy() }
+        updateToolbar()
     }
 
     override fun createFooter(): EditorFooter {
@@ -230,7 +214,8 @@ class p5jsEditor(base: Base, path: String?, state: EditorState?, mode: Mode?): E
                                         val npmResponseRaw = npmConn.getInputStream().readAllBytes().decodeToString()
                                         val npmResponse: JsonObject = Json.decodeFromString(npmResponseRaw)
                                         val npmPackages = npmResponse["objects"]!!.jsonArray
-                                        packagesSearched = npmPackages.map { it.jsonObject["package"]!!.jsonObject["name"]!!.jsonPrimitive.content }
+                                        packagesSearched =
+                                            npmPackages.map { it.jsonObject["package"]!!.jsonObject["name"]!!.jsonPrimitive.content }
                                         packageToInstall = packagesSearched[0]
                                     }
                                 })
@@ -249,7 +234,11 @@ class p5jsEditor(base: Base, path: String?, state: EditorState?, mode: Mode?): E
                     Spacer(Modifier.width(16.dp))
                     LazyColumn {
                         itemsIndexed(packagesSearched) { index, pkg ->
-                            Text(text = pkg, fontWeight = if (index == 0) FontWeight.Bold else FontWeight.Normal, modifier = Modifier.fillMaxWidth().padding(4.dp))
+                            Text(
+                                text = pkg,
+                                fontWeight = if (index == 0) FontWeight.Bold else FontWeight.Normal,
+                                modifier = Modifier.fillMaxWidth().padding(4.dp)
+                            )
                             Divider()
                         }
                     }
@@ -286,59 +275,96 @@ class p5jsEditor(base: Base, path: String?, state: EditorState?, mode: Mode?): E
         sketch.folder.resolve("electron/index.html").writeText(htmlCode)
     }
 
-    fun runCommand(action: String, directory: File = sketch.folder, onFinished: () -> Unit = {}) {
-        try {
-            // TODO: Get rid of magic strings. Better way to distinguish “endless” processes and processes we wait for?
-            if (action == "pnpm sketch:start") {
-                sketchProcess?.destroy()
-            }
+    fun updateToolbar() {
+        if (processes.any { it.isAlive }) {
+            toolbar.activateRun()
+        } else {
+            toolbar.deactivateRun()
+        }
+    }
 
-            val processBuilder = ProcessBuilder()
+    fun runSketch(present: Boolean) {
+        createIndexHtml()
+        deactivateRun()
+        statusNotice("Starting up sketch…")
 
-            // Set the command based on the operating system
-            val shell = System.getenv("SHELL")
-            val command = if (isWindows) {
-                listOf("cmd", "/c", action)
-            } else {
-                listOf(shell, "-ci", action)
-            }
 
-            processBuilder.command(command)
-            processBuilder.directory(directory)
-
-            val process = processBuilder.start()
-
-            if (action == "pnpm sketch:start") {
-                sketchProcess = process;
-            }
-
-            // Handle output stream
-            val reader = BufferedReader(InputStreamReader(process.inputStream))
-            var line: String?
-
-            while (reader.readLine().also { line = it } != null) {
-                // TODO: so much refactoring!
-                // Only check for errors when running the sketch
-                if (action == "pnpm sketch:start" && line?.startsWith("error") == true) {
-                    // TODO: more robust data exchange, double-check with @Stef
-                    // TODO: `statusError` does not do anything with column of a SketchException
-                    val ( msgType, msgText, msgFile, msgLine, msgCol ) = line.split("|")
-                    statusError(processing.utils.SketchException(msgText, 0, msgLine.toInt()-1, msgCol.toInt()))
-                    continue
+        scope.launch {
+            try {
+                val packageJson = sketch.folder.resolve("package.json")
+                val hashFile = sketch.folder.resolve("electron/.package_json_hash")
+                val newHash = packageJson.readText().hashCode()
+                val oldHash = hashFile.let { if (it.exists()) it.readText().toInt() else null }
+                if (newHash != oldHash) {
+                    statusNotice("Installing Node dependencies…")
+                    runCommand("pnpm install --dangerously-allow-all-builds")
+                    hashFile.writeText(newHash.toString())
                 }
+                statusNotice("Running sketch…")
+                val builder = builder("PRESENT=$present pnpm sketch:start", sketch.folder)
+                val process = builder.start()
+                processes.add(process)
+                updateToolbar()
 
-                println(line)
+                // Handle output stream
+                val reader = BufferedReader(InputStreamReader(process.inputStream))
+                var line: String?
+
+                while (reader.readLine().also { line = it } != null) {
+                    // TODO: so much refactoring!
+                    // Only check for errors when running the sketch
+                    if (line?.startsWith("error") == true) {
+                        // TODO: more robust data exchange, double-check with @Stef
+                        // TODO: `statusError` does not do anything with column of a SketchException
+                        val (msgType, msgText, msgFile, msgLine, msgCol) = line.split("|")
+                        statusError(processing.utils.SketchException(msgText, 0, msgLine.toInt() - 1, msgCol.toInt()))
+                        continue
+                    }
+
+                    println(line)
+                }
+                process.waitFor()
+                if (processes.lastOrNull() == process) {
+                    statusNotice("Sketch stopped.")
+                }
+                processes.remove(process)
+                updateToolbar()
+
+            } catch (e: Exception) {
+                statusError("Failed to run sketch: ${e.message}")
             }
+        }
+    }
 
+
+    fun runCommand(action: String, directory: File = sketch.folder) {
+        try {
+            val processBuilder = builder(action, directory)
+            val process = processBuilder.start()
+            // suspend fun to wait for process to finish
             val exitCode = process.waitFor()
 
             if (exitCode != 0) {
                 throw RuntimeException("Command failed with non-zero exit code $exitCode.")
             }
-
-            onFinished()
         } catch (e: Exception) {
             statusError("Failed to run `$action`: ${e.message}")
         }
+    }
+
+    private fun builder(action: String, directory: File): ProcessBuilder {
+        val processBuilder = ProcessBuilder()
+
+        // Set the command based on the operating system
+        val shell = System.getenv("SHELL")
+        val command = if (isWindows) {
+            listOf("cmd", "/c", action)
+        } else {
+            listOf(shell, "-ci", action)
+        }
+
+        processBuilder.command(command)
+        processBuilder.directory(directory)
+        return processBuilder
     }
 }
