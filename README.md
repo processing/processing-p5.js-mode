@@ -5,8 +5,6 @@ Desktop Support for p5.js via a New Processing Mode
 
 This mode integrates p5.js into the Processing Development Environment (PDE) and provides a desktop runtime based on Electron.
 
-Here is a **usage- and contribution-focused README**, with background, grant framing, and personal reflections removed.
-
 ## Features
 
 * Run and stop p5.js sketches directly from Processing
@@ -44,3 +42,9 @@ See the wiki for [architecture notes](https://github.com/processing/processing-p
 ## Licensing
 
 License information can be found in [LICENCE.md](LICENSE.md).
+
+## Acknowledgement
+
+This project was created by Stephan Max (@stephanmax) as part of the 2025 Building Bridges (pr05) Grant from the Processing Foundation. The project was mentored by Stef Tervelde (@Stefterv).
+
+For more context, watch Stephan’s [presentation at OpenAssembly 2025](https://www.youtube.com/watch?v=HsV7tbOviEw) and read his [blog post](https://stephanmax.com/pr05-grant-retrospective/).
