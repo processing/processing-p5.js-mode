@@ -78,7 +78,8 @@ tasks.register<Download>("includeP5jsExamples"){
 }
 
 tasks.register<Copy>("createMode") {
-    dependsOn("jar", "includeP5jsExamples")
+    dependsOn("jar")
+    finalizedBy("includeP5jsExamples")
     into(layout.buildDirectory.dir("mode"))
     // TODO Why is there a duplicate in the first place?
     duplicatesStrategy = DuplicatesStrategy.WARN
@@ -102,7 +103,7 @@ tasks.register<Copy>("createMode") {
 
 
 tasks.register<Zip>("createZip") {
-    dependsOn("createMode")
+    dependsOn("createMode", "includeP5jsExamples")
     from(tasks.named("createMode"))
     into(project.name)
 
@@ -110,7 +111,7 @@ tasks.register<Zip>("createZip") {
 }
 
 tasks.register<Zip>("createPdex") {
-    dependsOn("createMode")
+    dependsOn("createMode", "includeP5jsExamples")
     from(tasks.named("createMode"))
     into(project.name)
 
