@@ -1,76 +1,46 @@
-<!-- Uncomment the shield below once the repo is made public -->
-<!-- [![All Contributors](https://img.shields.io/github/all-contributors/processing/processing4?color=ee8449)](#contributors) -->
+# p5.js Electron mode for Processing
+Desktop Support for p5.js via a New Processing Mode
 
-<img alt="Processing Logo" src="https://processing.org/favicon.svg" width="250">
+<img width="1600" height="998" alt="image" src="https://github.com/user-attachments/assets/ceb70725-b8b3-436e-9f8b-4e45fa7d61b2" />
 
-Processing is a flexible software sketchbook and a programming language designed for learning how to code.
+This mode integrates p5.js into the Processing Development Environment (PDE) and provides a desktop runtime based on Electron.
 
-This repository contains the source code for the [Processing](https://processing.org/) project for people who want to help improve the code.
+Here is a **usage- and contribution-focused README**, with background, grant framing, and personal reflections removed.
 
-## Welcome to Processing 4.4!
+## Features
 
-We’re excited to announce the release of Processing 4.4! This update modernizes Processing under the hood to make future development easier. Key changes include switching the build system from Ant to Gradle, starting the transition from Swing to Jetpack Compose Multiplatform for the UI, and adding Kotlin support to the codebase. To learn more, check out [Changes in 4.4.0](https://github.com/processing/processing4/wiki/Changes-in-4.4).
+* Run and stop p5.js sketches directly from Processing
+* Electron-based embedded browser for rendering
+* Error reporting in the editor
+* Built-in examples (WIP)
+* Syntax highlighting (Note: The current syntax highlighting system has [known limitations](https://github.com/processing/processing-p5.js-mode/wiki/Syntax-Highlighting) and may change)
+* Works on Linux, macOS, and Windows
+* **PNPM** for Node package and dependency management
+* Automatic installation of required tools:
+  * PNPM
+  * Node.js
+  * Electron
 
-We hope these updates will make it easier for more people to contribute to Processing. If you'd like to get involved, have a look at our [Contributor Guide](CONTRIBUTING.md).
+### Exporting Sketches
 
-## Acknowledgement
-Processing was initiated in 2001 by Ben Fry and Casey Reas, who led the development and maintenance of the project until 2023. We are grateful for their vision and dedication to the project. Processing is also indebted to over two decades of contributions from the broader Processing community.
+* Export p5.js sketches as standalone desktop apps
+* Uses `electron-builder` for packaging
 
-## Using Processing
+## Installation
 
-If you're interested in *using* Processing, head over to the [download page](https://processing.org/download), or read more about the project on the [Processing website](https://processing.org/). There are also several [tutorials](https://processing.org/tutorials) that provide a helpful introduction. They are complemented by hundreds of examples that are included with the software itself.
+### Using Prebuilt Releases
 
-## Getting Help 
-For assistance with your own sketches, projects, or code, please post your question on the Processing forum: https://discourse.processing.org/. Our community is full of experienced developers and knowledgeable users who are eager to help. Before you post, please take a moment to read the [guidelines on asking questions](https://discourse.processing.org/t/guidelines-asking-questions/2147) to make sure you get the best possible help. We’re incredibly grateful for the support and knowledge shared by everyone on the forum over the years.
+1. Download the latest `.pdex` file from the [Releases](https://github.com/processing/processing-p5.js-mode/releases) page.   
+2. Opening the `.pdex` file in Processing
 
-## Contributing to Processing
-Processing is a labor of love, built over decades by people who believe in this community and genuinely enjoy contributing to it. If you want to fix a bug that’s been bothering you or give back to the project in other ways, you’re in the right place! We invite you to think of this repository as a community garden. We’re here to cultivate something beautiful together, and that takes kindness, dedication, and patience. For detailed guidelines on how to contribute, please see our [CONTRIBUTING.md](CONTRIBUTING.md).
+### From Source (for contributors)
 
-We understand that contributing to open source can be intimidating, but mistakes are part of learning—and we are all learners here. We do not assume knowledge or imply that somebody should already know any particular thing in order to contribute. Whether you’re a newcomer or an expert, your knowledge and contributions are valuable. Never hesitate to ask questions, open an issue, a pull request, or write a comment. We also encourage you to step in if you can: reply to issues, review pull requests, or help out in whatever way feels right for you.
+* The mode is implemented in **Kotlin**
+* Mode-specific code lives in the top-level `p5js` directory
+* Build and distribution tasks are handled with **Gradle**
 
-While we assume good intentions, and will give everyone a chance to learn, we have zero tolerance for repeated harassment, harmful behavior, or toxicity of any kind. Please read our [Code of Conduct](https://github.com/processing/processing4?tab=coc-ov-file) and join us in creating a safe and supportive environment through your words and actions.
+See the wiki for [architecture notes](https://github.com/processing/processing-p5.js-mode/wiki).
 
-## AI Usage Policy
-This project does *not* accept fully AI-generated contributions. AI tools may be used assistively only. As a contributor, you should be able to understand and take responsibility for changes you make to the codebase.
+## Licensing
 
-More details can be found in our [AI Usage Policy](./AI_USAGE_POLICY.md) and [AGENTS.md](./AGENTS.md).
-
-## Building Processing
-
-Building Processing locally on your machine will let you troubleshoot and make sure your contributions work as intended before submitting them to this repository. It also gives you the flexibility to experiment and learn more about how Processing is structured.
-
-For a quick start: 
-1. Fork and clone the repository
-1. Open it in IntelliJ IDEA
-1. Wait for Gradle to sync
-1. Next to the run Button, select the `Processing` Configuration 
-1. Hit Run
-
-For more information and detailed instructions, follow our [How to Build Processing](BUILD.md) guide.
-
-## Contact Information
-For technical support or troubleshooting with your project, please post on the [Processing Forum](https://discourse.processing.org/).
-
-For bug reports or feature requests, please [create an issue](https://github.com/processing/processing4/issues).
-
-For non-technical inquiries, here’s how to get in touch:
-
-- For press inquiries, general information about the Processing software, or other non-technical questions, contact [hello@processing.org](mailto:hello@processing.org).
-- For anything related to the Processing Foundation or broader topics beyond the software, please reach out to [foundation@processingfoundation.org](mailto:foundation@processingfoundation.org).
-
-## License & Copyright
-
-- The **core library** is licensed under the GNU Lesser General Public License version 2.1 ([LGPL-2.1](https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html)).
-- Everything else including the **PDE** is licensed under the GNU General Public License version 2 ([GPL-2.0](https://www.gnu.org/licenses/old-licenses/gpl-2.0.html)).
-- The **reference**, including the JavaDoc comments, is licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License ([CC-BY-NC-SA-4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/)).
-
-For complete licensing information about the Processing core library and software, see [LICENSE.md](LICENSE.md)
-
-For licensing information about the Processing website see the [processing-website README](https://github.com/processing/processing-website/blob/main/README.md#licenses).
-
-Copyright (c) 2015-now The Processing Foundation
-
-## Contributors
-See [CONTRIBUTORS.md](./CONTRIBUTORS.md) for a list of all contributors to the project.
-
-This project follows the [all-contributors specification](https://github.com/all-contributors/all-contributors) and the [Emoji Key](https://all-contributors.github.io/emoji-key/) ✨ for contribution types. Detailed instructions on how to add yourself or add contribution emojis to your name are [here](https://github.com/processing/processing4/issues/839). You can also post an issue or comment on a pull request with the text: `@all-contributors please add @YOUR-USERNAME for THINGS` (where `THINGS` is a comma-separated list of entries from the [list of possible contribution types](https://all-contributors.github.io/emoji-key/)) and our nice bot will add you to [CONTRIBUTORS.md](./CONTRIBUTORS.md) automatically!
+License information can be found in [LICENCE.md](LICENSE.md).
