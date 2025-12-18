@@ -3,10 +3,10 @@ package processing.p5js
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.material.Button
-import androidx.compose.material.Divider
-import androidx.compose.material.OutlinedTextField
-import androidx.compose.material.Text
+import androidx.compose.material3.Button
+import androidx.compose.material3.Divider
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -27,7 +27,7 @@ import processing.app.syntax.JEditTextArea
 import processing.app.syntax.PdeTextArea
 import processing.app.syntax.PdeTextAreaDefaults
 import processing.app.ui.*
-import processing.app.ui.theme.ProcessingTheme
+import processing.app.ui.theme.PDETheme
 import java.awt.event.ActionEvent
 import java.awt.event.ActionListener
 import java.io.BufferedReader
@@ -188,9 +188,11 @@ class p5jsEditor(base: Base, path: String?, state: EditorState?, mode: Mode?): E
 
     override fun createFooter(): EditorFooter {
         val footer = super.createFooter()
+        return footer;
+
         val composePanel = ComposePanel()
         composePanel.setContent {
-            ProcessingTheme {
+            PDETheme(darkTheme = false) {
                 var packageToInstall by remember { mutableStateOf("") }
                 var packagesSearched by remember { mutableStateOf(listOf<String>()) }
                 Row(
@@ -310,7 +312,7 @@ class p5jsEditor(base: Base, path: String?, state: EditorState?, mode: Mode?): E
                     // TODO: more robust data exchange, double-check with @Stef
                     // TODO: `statusError` does not do anything with column of a SketchException
                     val ( msgType, msgText, msgFile, msgLine, msgCol ) = line.split("|")
-                    statusError(SketchException(msgText, 0, msgLine.toInt()-1, msgCol.toInt()))
+                    statusError(processing.utils.SketchException(msgText, 0, msgLine.toInt()-1, msgCol.toInt()))
                     continue
                 }
 

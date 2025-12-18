@@ -7,7 +7,7 @@ const createWindow = () => {
     height: 400,
     show: false,
     autoHideMenuBar: true,
-    alwaysOnTop: true,
+    alwaysOnTop: false,
     webPreferences: {
       contextIsolation: false,
       nodeIntegration: true,

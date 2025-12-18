@@ -1,3 +1,5 @@
+import org.jetbrains.compose.internal.de.undercouch.gradle.tasks.download.Download
+
 plugins {
     kotlin("jvm") version libs.versions.kotlin
     kotlin("plugin.serialization") version "1.9.0"
@@ -15,6 +17,7 @@ repositories {
 
 dependencies {
     compileOnly(project(":app"))
+    compileOnly(project(":app:utils"))
     implementation(project(":core"))
 
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
@@ -27,10 +30,33 @@ dependencies {
     implementation(compose.ui)
     implementation(compose.components.resources)
     implementation(compose.components.uiToolingPreview)
+    implementation(libs.material3)
+}
+
+tasks.register<Download>("includeP5jsExamples"){
+    val examples = layout.buildDirectory.file("tmp/p5-examples.zip")
+    src("https://github.com/processing/p5.js-website/archive/refs/heads/2.0.zip")
+    dest(examples)
+    overwrite(false)
+    doLast{
+        copy{
+            from(zipTree(examples)){ // remove top level directory
+                include("*/src/content/examples/en/**/*")
+                eachFile { relativePath = RelativePath(true, *relativePath.segments.drop(5).toTypedArray()) }
+                eachFile{
+                    if(name != "code.js"){ return@eachFile }
+
+                    val parentName = this.file.parentFile.name
+                    name = "$parentName.js"
+                }
+            }
+            into(layout.buildDirectory.dir("mode/examples/Basics"))
+        }
+    }
 }
 
 tasks.register<Copy>("createMode") {
-    dependsOn("jar")
+    dependsOn("jar", "includeP5jsExamples")
     into(layout.buildDirectory.dir("mode"))
     // TODO Why is there a duplicate in the first place?
     duplicatesStrategy = DuplicatesStrategy.WARN
