@@ -23,17 +23,17 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17.0.8'
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-      - name: Build with Gradle
-        run: ./gradlew createPdex createZip
 
       - name: Set Version Number
         run: |
           VERSION_NUMBER=${{ github.event.inputs.version_number }}
           VERSION_PRETTY=${{ github.event.inputs.version_pretty }}
-          sed -i "s/^version=.*$/version=$VERSION_NUMBER/" p5js/mode/mode.properties
-          sed -i "s/^prettyVersion=.*$/prettyVersion=$VERSION_PRETTY/" p5js/mode/mode.properties
+          sed -i "s/^version=.*$/version=$VERSION_NUMBER/" ./p5js/library/mode.properties
+          sed -i "s/^prettyVersion=.*$/prettyVersion=$VERSION_PRETTY/" ./p5js/library/mode.properties
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+      - name: Build with Gradle
+        run: ./gradlew createPdex createZip
 
       - name: Upload to Release
         uses: svenstaro/upload-release-action@v2
