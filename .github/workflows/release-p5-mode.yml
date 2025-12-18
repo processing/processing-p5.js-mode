@@ -1,0 +1,33 @@
+name: Release p5.js Mode
+on:
+  release:
+    types: [published]
+
+jobs:
+  release:
+    name: Release p5.js Mode
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+      - name: Install Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17.0.8'
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+      - name: Build with Gradle
+        run: ./gradlew createPdex createZip
+
+      - name: Upload to Release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: p5js/build/p5js.*
+          tag: ${{ github.ref }}
+          file_glob: true
+          overwrite: true
+

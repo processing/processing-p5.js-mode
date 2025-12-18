@@ -100,6 +100,15 @@ tasks.register<Copy>("createMode") {
     }
 }
 
+
+tasks.register<Zip>("createZip") {
+    dependsOn("createMode")
+    from(tasks.named("createMode"))
+    into(project.name)
+
+    destinationDirectory.set(layout.buildDirectory)
+}
+
 tasks.register<Zip>("createPdex") {
     dependsOn("createMode")
     from(tasks.named("createMode"))
