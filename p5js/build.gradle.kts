@@ -1,4 +1,5 @@
 import org.jetbrains.compose.internal.de.undercouch.gradle.tasks.download.Download
+import org.jetbrains.kotlin.konan.properties.suffix
 import kotlin.text.replace
 
 plugins {
@@ -44,7 +45,9 @@ tasks.register<Download>("includeP5jsExamples"){
             from(zipTree(examples)){ // remove top level directory
                 include("*/src/content/examples/en/**/*")
                 exclude("**/description.mdx")
-                eachFile { relativePath = RelativePath(true, *relativePath.segments.drop(5).toTypedArray()) }
+                eachFile{
+                    relativePath = RelativePath(true, *relativePath.segments.drop(5).toTypedArray())
+                }
                 eachFile{
                     if(name != "code.js"){ return@eachFile }
 
@@ -57,6 +60,16 @@ tasks.register<Download>("includeP5jsExamples"){
                     val parentName = this.file.parentFile.name
                     if(parentName == name.removeSuffix(".js")){ return@eachFile }
                     relativePath = RelativePath(true, *relativePath.segments.dropLast(1).toTypedArray(), name.removeSuffix(".js"), name)
+                }
+                // if a sketch folder starts with a digit, remove that digit and the following dash
+                eachFile {
+                    val parent = this.file.parentFile
+                    val parentName = parent.name
+                    val regex = Regex("^\\d+_")
+                    if(regex.containsMatchIn(parentName)){
+                        val newParentName = parentName.replace(regex, "")
+                        relativePath = RelativePath(true, *relativePath.segments.dropLast(2).toTypedArray(), newParentName, newParentName.suffix("js"))
+                    }
                 }
             }
             into(layout.buildDirectory.dir("mode/examples/Basics"))
