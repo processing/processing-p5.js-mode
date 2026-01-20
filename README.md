@@ -26,6 +26,12 @@ This mode integrates p5.js into the Processing Development Environment (PDE) and
 
 ## Installation
 
+### From the Processing Editor (PDE)
+
+1. [Download Processing](https://processing.org/download)  
+2. Install it (see the [install instructions](https://processing.org/tutorials/gettingstarted))  
+3. Open the Contribution Manager in Processing and install **p5.js Mode (experimental)**.
+
 ### Using Prebuilt Releases
 
 1. Download the latest `.pdex` file from the [Releases](https://github.com/processing/processing-p5.js-mode/releases) page.   
