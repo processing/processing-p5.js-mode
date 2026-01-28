@@ -63,24 +63,55 @@ class p5jsEditor(base: Base, path: String?, state: EditorState?, mode: Mode?) : 
 
             createIndexHtml()
 
-            // TODO: refactor into functions, pick up crucial information from stdout
-            statusNotice("Looking for pnpm…")
+            val stackedStatusNotice = createStackedStatusNotice()
+            stackedStatusNotice("Looking for pnpm…")
             try {
-                runCommand("pnpm -v")
+                val pnpmVersion = probeCommand("pnpm -v")
+                stackedStatusNotice("Found $pnpmVersion.")
             } catch (e: Exception) {
-                statusNotice("pnpm not found. Installing pnpm…")
+                stackedStatusNotice("Not found. Installing pnpm…")
                 if (isWindows) {
                     runCommand("powershell -command \"Invoke-WebRequest https://get.pnpm.io/install.ps1 -UseBasicParsing | Invoke-Expression\"")
                 } else {
                     runCommand("chmod u+x ${mode?.folder}/install.sh")
                     runCommand("${mode?.folder}/install.sh")
                 }
-
-                statusNotice("Installing Node via pnpm…")
-                runCommand("pnpm env use --global lts")
+                stackedStatusNotice("Done.")
             }
 
-            statusNotice("All done! Enjoy p5.js mode.")
+            stackedStatusNotice("Looking for node…")
+            try {
+                val nodeVersion = probeCommand("node -v")
+                stackedStatusNotice("Found $nodeVersion.")
+            } catch (e: Exception) {
+                stackedStatusNotice("Not found. Installing node via pnpm…")
+
+                runCommand("pnpm env use --global lts")
+
+                stackedStatusNotice("Done.")
+            }
+
+            stackedStatusNotice("Enjoy p5.js mode!")
+        }
+    }
+
+    fun probeCommand(command: String): String {
+        val process = builder(command).start()
+        val exitCode = process.waitFor()
+
+        if (exitCode != 0) {
+            throw RuntimeException("Command failed with non-zero exit code $exitCode.")
+        }
+
+        val output = process.inputStream.bufferedReader().use { it.readText() }
+        return output
+    }
+
+    fun createStackedStatusNotice(): (String) -> Unit {
+        var statusText = mutableListOf<String>()
+        return fun(text: String) {
+            statusText.add(text)
+            statusNotice(statusText.joinToString(" "))
         }
     }
 
@@ -102,8 +133,7 @@ class p5jsEditor(base: Base, path: String?, state: EditorState?, mode: Mode?) : 
             if (sketch.isUntitled || sketch.isReadOnly) {
                 Messages.showMessage("Save First", "Please first save the sketch.");
             } else {
-                // TODO: I’m sure this is not the best way to ensure that this runs async, so the ActionListener can return
-                // but works for now
+                // TODO: I’m sure this is not the best way to ensure that this runs async, so the ActionListener can return but works for now
                 scope.launch {
                     handleExport()
                 }
@@ -336,7 +366,6 @@ class p5jsEditor(base: Base, path: String?, state: EditorState?, mode: Mode?) : 
         }
     }
 
-
     fun runCommand(action: String, directory: File = sketch.folder) {
         try {
             val processBuilder = builder(action, directory)
@@ -358,15 +387,14 @@ class p5jsEditor(base: Base, path: String?, state: EditorState?, mode: Mode?) : 
         }
     }
 
-    private fun builder(action: String, directory: File): ProcessBuilder {
+    private fun builder(action: String, directory: File = sketch.folder): ProcessBuilder {
         val processBuilder = ProcessBuilder()
 
         // Set the command based on the operating system
-        val shell = System.getenv("SHELL")
         val command = if (isWindows) {
             listOf("cmd", "/c", action)
         } else {
-            listOf(shell, "-ci", action)
+            listOf(System.getenv("SHELL"), "-ci", action)
         }
 
         processBuilder.command(command)
