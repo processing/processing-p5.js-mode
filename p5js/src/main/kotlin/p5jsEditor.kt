@@ -103,7 +103,7 @@ class p5jsEditor(base: Base, path: String?, state: EditorState?, mode: Mode?) : 
             throw RuntimeException("Command failed with non-zero exit code $exitCode.")
         }
 
-        val output = process.inputStream.bufferedReader().use { it.readText() }
+        val output = process.inputStream.bufferedReader().use { it.readLines().last() }
         return output
     }
 
