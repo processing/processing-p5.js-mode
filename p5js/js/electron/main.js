@@ -40,6 +40,11 @@ app.on('window-all-closed', () => {
 app.whenReady().then(() => {
   const win = createWindow();
 
+  // Allow all devices to be connected to
+  win.webContents.session.setDevicePermissionHandler((details) => {
+      return true
+  })
+
   ipcMain.on("send-message", (event, message) => {
     console.log(message);
   });
