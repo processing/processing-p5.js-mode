@@ -3,10 +3,10 @@ on:
   workflow_dispatch:
     inputs:
       version_number:
-        description: "What is the revision number?"
+        description: "What is the revision number? (e.g. 1)"
         required: true
       version_pretty:
-        description: "What is the pretty version name?"
+        description: "What is the pretty version name? (e.g. 0.1.0)"
         required: true
 
 jobs:
