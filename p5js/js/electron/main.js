@@ -7,6 +7,7 @@ const createWindow = () => {
     height: 400,
     show: false,
     fullscreen: process.env.PRESENT == "true",
+    fullscreenable: true,
     autoHideMenuBar: true,
     alwaysOnTop: false,
     webPreferences: {
