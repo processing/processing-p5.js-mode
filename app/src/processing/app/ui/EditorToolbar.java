@@ -126,6 +126,7 @@ abstract public class EditorToolbar extends JPanel implements KeyListener {
 
 
   public List<EditorButton> createButtons() {
+
     runButton = new EditorButton(this,
                                  "/lib/toolbar/run",
                                  Language.text("toolbar.run"),
@@ -144,8 +145,37 @@ abstract public class EditorToolbar extends JPanel implements KeyListener {
         handleStop();
       }
     };
-    return new ArrayList<>(Arrays.asList(runButton, stopButton));
-  }
+
+    EditorButton customizeButton = new EditorButton(this,
+            "/lib/toolbar/run", // reuse icon for now
+            "Customize Settings") {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            openCustomizationDialog();
+        }
+    };
+
+    return new ArrayList<>(Arrays.asList(runButton, stopButton, customizeButton));
+}
+private void openCustomizationDialog() {
+
+  javax.swing.JDialog dialog = new javax.swing.JDialog(
+          javax.swing.SwingUtilities.getWindowAncestor(this),
+          "Customization Settings",
+          java.awt.Dialog.ModalityType.APPLICATION_MODAL
+  );
+
+  dialog.setSize(400, 250);
+  dialog.setLocationRelativeTo(this);
+
+  javax.swing.JPanel panel = new javax.swing.JPanel();
+  panel.add(new javax.swing.JLabel("Customization options go here"));
+
+  dialog.add(panel);
+  dialog.setVisible(true);
+}
+
+
 
 
   public void addModeButtons(Box box, JLabel label) {
